@@ -7,37 +7,21 @@
 
 const Storage = (() => {
 
-  /* ── Configuración ── */
-  // Cambiá esta URL por la URL de tu servidor en Render
   const SERVER_URL = 'https://sgas-server.onrender.com';
-
   let modoRed = false;
-  let db      = null;  // IndexedDB (modo local)
+  let db      = null;
 
-  /* ================================================================
-     DETECCIÓN AUTOMÁTICA DE MODO
-     ================================================================ */
   async function init() {
     try {
       const res = await fetch(`${SERVER_URL}/api/ping`, { signal: AbortSignal.timeout(4000) });
-      if (res.ok) {
-        modoRed = true;
-        console.log('SGAS: Modo RED activo →', SERVER_URL);
-        return;
-      }
-    } catch(e) {
-      // Servidor no disponible, usar local
-    }
-    // Inicializar IndexedDB local
+      if (res.ok) { modoRed = true; console.log('SGAS: Modo RED activo →', SERVER_URL); return; }
+    } catch(e) {}
     await initIndexedDB();
     console.log('SGAS: Modo LOCAL activo (IndexedDB)');
   }
 
   function getModo() { return modoRed ? 'red' : 'local'; }
 
-  /* ================================================================
-     FETCH HELPER (modo red)
-     ================================================================ */
   async function apiFetch(path, options = {}) {
     const res = await fetch(`${SERVER_URL}${path}`, {
       ...options,
@@ -51,11 +35,8 @@ const Storage = (() => {
     return res.json();
   }
 
-  /* ================================================================
-     INDEXEDDB (modo local)
-     ================================================================ */
-  const DB_NAME    = 'SGAS_DB';
-  const DB_VERSION = 1;
+  const DB_NAME = 'SGAS_DB';
+  const DB_VERSION = 3;
 
   function initIndexedDB() {
     return new Promise((resolve, reject) => {
@@ -73,6 +54,8 @@ const Storage = (() => {
           database.createObjectStore('documentos', { keyPath: 'id', autoIncrement: true });
         if (!database.objectStoreNames.contains('config'))
           database.createObjectStore('config', { keyPath: 'key' });
+        if (!database.objectStoreNames.contains('categorias'))
+          database.createObjectStore('categorias', { keyPath: 'id', autoIncrement: true });
       };
       req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror   = (e) => reject(e.target.error);
@@ -106,7 +89,7 @@ const Storage = (() => {
   function idbSave(storeName, record) {
     return new Promise((res, rej) => {
       const store = idbStore(storeName, 'readwrite');
-      const r     = record.id ? store.put(record) : store.add(record);
+      const r = record.id ? store.put(record) : store.add(record);
       r.onsuccess = () => res(r.result);
       r.onerror   = () => rej(r.error);
     });
@@ -119,119 +102,65 @@ const Storage = (() => {
     });
   }
 
-  /* ================================================================
-     API PÚBLICA — ATS
-     ================================================================ */
   const ATS = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/ats');
-      return idbGetAll('ats');
-    },
-    getByCategoria: async (cat) => {
-      if (modoRed) return apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}`);
-      return idbGetByIndex('ats', 'categoria', cat);
-    },
-    getById: async (id) => {
-      if (modoRed) return apiFetch(`/api/ats/${id}`);
-      return idbGet('ats', id);
-    },
+    getAll: async () => modoRed ? apiFetch('/api/ats') : idbGetAll('ats'),
+    getByCategoria: async (cat) => modoRed ? apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}`) : idbGetByIndex('ats', 'categoria', cat),
+    getById: async (id) => modoRed ? apiFetch(`/api/ats/${id}`) : idbGet('ats', id),
     save: async (record) => {
       if (modoRed) {
-        if (record.id) {
-          const r = await apiFetch(`/api/ats/${record.id}`, { method: 'PUT', body: record });
-          return r.id;
-        } else {
-          const r = await apiFetch('/api/ats', { method: 'POST', body: record });
-          record.id = r.id;
-          return r.id;
-        }
+        if (record.id) { const r = await apiFetch(`/api/ats/${record.id}`, { method: 'PUT', body: record }); return r.id; }
+        else { const r = await apiFetch('/api/ats', { method: 'POST', body: record }); record.id = r.id; return r.id; }
       }
       return idbSave('ats', record);
     },
-    remove: async (id) => {
-      if (modoRed) return apiFetch(`/api/ats/${id}`, { method: 'DELETE' });
-      return idbRemove('ats', id);
-    },
+    remove: async (id) => modoRed ? apiFetch(`/api/ats/${id}`, { method: 'DELETE' }) : idbRemove('ats', id),
   };
 
-  /* ================================================================
-     API PÚBLICA — EMERGENCIAS
-     ================================================================ */
   const Emergencias = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/emergencias');
-      return idbGetAll('emergencias');
-    },
-    getById: async (id) => {
-      if (modoRed) return apiFetch(`/api/emergencias/${id}`);
-      return idbGet('emergencias', id);
-    },
+    getAll: async () => modoRed ? apiFetch('/api/emergencias') : idbGetAll('emergencias'),
+    getById: async (id) => modoRed ? apiFetch(`/api/emergencias/${id}`) : idbGet('emergencias', id),
     save: async (record) => {
       if (modoRed) {
-        if (record.id) {
-          const r = await apiFetch(`/api/emergencias/${record.id}`, { method: 'PUT', body: record });
-          return r.id;
-        } else {
-          const r = await apiFetch('/api/emergencias', { method: 'POST', body: record });
-          record.id = r.id;
-          return r.id;
-        }
+        if (record.id) { const r = await apiFetch(`/api/emergencias/${record.id}`, { method: 'PUT', body: record }); return r.id; }
+        else { const r = await apiFetch('/api/emergencias', { method: 'POST', body: record }); record.id = r.id; return r.id; }
       }
       return idbSave('emergencias', record);
     },
-    remove: async (id) => {
-      if (modoRed) return apiFetch(`/api/emergencias/${id}`, { method: 'DELETE' });
-      return idbRemove('emergencias', id);
-    },
+    remove: async (id) => modoRed ? apiFetch(`/api/emergencias/${id}`, { method: 'DELETE' }) : idbRemove('emergencias', id),
   };
 
-  /* ================================================================
-     API PÚBLICA — DOCUMENTOS
-     ================================================================ */
   const Documentos = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/documentos');
-      return idbGetAll('documentos');
-    },
-    getById: async (id) => {
-      if (modoRed) return apiFetch(`/api/documentos/${id}`);
-      return idbGet('documentos', id);
-    },
+    getAll: async () => modoRed ? apiFetch('/api/documentos') : idbGetAll('documentos'),
+    getById: async (id) => modoRed ? apiFetch(`/api/documentos/${id}`) : idbGet('documentos', id),
     save: async (record) => {
-      if (modoRed) {
-        const r = await apiFetch('/api/documentos', { method: 'POST', body: record });
-        record.id = r.id;
-        return r.id;
-      }
+      if (modoRed) { const r = await apiFetch('/api/documentos', { method: 'POST', body: record }); record.id = r.id; return r.id; }
       return idbSave('documentos', record);
     },
-    remove: async (id) => {
-      if (modoRed) return apiFetch(`/api/documentos/${id}`, { method: 'DELETE' });
-      return idbRemove('documentos', id);
-    },
+    remove: async (id) => modoRed ? apiFetch(`/api/documentos/${id}`, { method: 'DELETE' }) : idbRemove('documentos', id),
   };
 
-  /* ================================================================
-     API PÚBLICA — CONFIG
-     ================================================================ */
   const Config = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/config');
-      return idbGetAll('config');
-    },
+    getAll: async () => modoRed ? apiFetch('/api/config') : idbGetAll('config'),
     get: async (key) => {
-      if (modoRed) {
-        const all = await apiFetch('/api/config');
-        return all.find(c => c.key === key) || null;
-      }
+      if (modoRed) { const all = await apiFetch('/api/config'); return all.find(c => c.key === key) || null; }
       return idbGet('config', key);
     },
-    set: async (key, value) => {
-      if (modoRed) return apiFetch('/api/config', { method: 'POST', body: { key, value } });
-      return idbSave('config', { key, value });
-    },
+    set: async (key, value) => modoRed ? apiFetch('/api/config', { method: 'POST', body: { key, value } }) : idbSave('config', { key, value }),
   };
 
-  return { init, getModo, ATS, Emergencias, Documentos, Config };
+  const Categorias = {
+    getAll: async () => modoRed ? apiFetch('/api/categorias') : idbGetAll('categorias'),
+    save: async (record) => {
+      if (modoRed) {
+        if (record.id) return apiFetch(`/api/categorias/${record.id}`, { method: 'PUT', body: record });
+        const r = await apiFetch('/api/categorias', { method: 'POST', body: record });
+        record.id = r.id; return r.id;
+      }
+      return idbSave('categorias', record);
+    },
+    remove: async (id) => modoRed ? apiFetch(`/api/categorias/${id}`, { method: 'DELETE' }) : idbRemove('categorias', id),
+  };
+
+  return { init, getModo, ATS, Emergencias, Documentos, Config, Categorias };
 
 })();
