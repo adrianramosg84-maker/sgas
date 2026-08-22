@@ -3,66 +3,52 @@
    Navegación principal, routing por hash, estado global, UI shell.
    ================================================================ */
 
-/* ── Estado global ── */
 const App = {
   currentView:     'inicio',
-  currentCategory: '',       // categoría ATS activa
-  currentModule:   '',       // módulo activo (talleres, rescatista, etc.)
+  currentCategory: '',
+  currentModule:   '',
 };
 
-/* ── Objeto Views: cada módulo registra sus vistas aquí ── */
 const Views = {
-  inicio:      () => {
-    setBreadcrumb([{ label: 'Inicio' }]);
-    showView('inicio');
-  },
-  emergencias: () => {},   // sobreescrito por emergencias.js
-  planos:      () => {},   // sobreescrito por documentos.js
-  config:      () => {},   // sobreescrito por config.js
-  atsLista:    () => {},   // sobreescrito por ats.js
-  genericoLista: () => {}, // sobreescrito por ats.js
+  inicio:        () => { setBreadcrumb([{ label: 'Inicio' }]); showView('inicio'); },
+  emergencias:   () => {},
+  planos:        () => {},
+  config:        () => {},
+  atsLista:      () => {},
+  genericoLista: () => {},
 };
 
-/* ── Mapa de rutas hash ── */
+/* ── Rutas fijas ── */
 const ROUTES = {
   'inicio':               () => Views.inicio(),
   'emergencias':          () => Views.emergencias(),
   'planos':               () => Views.planos(),
   'config':               () => Views.config(),
-  'talleres':             () => Views.genericoLista('talleres',    'ATS de Talleres'),
-  'rescatista':           () => Views.genericoLista('rescatista',  'Rescatista'),
+  'talleres':             () => Views.genericoLista('talleres',             'ATS de Talleres'),
+  'rescatista':           () => Views.genericoLista('rescatista',           'Rescatista'),
   'actividades-criticas': () => Views.genericoLista('actividades-criticas', 'Actividades Críticas'),
 };
 
-/* ── Router principal ── */
+/* ── Router ── */
 function route(hash) {
   hash = hash || location.hash.slice(1) || 'inicio';
-
-  // ATS por categoría: ats/pintura, ats/andamios, etc.
   if (hash.startsWith('ats/') && !hash.startsWith('ats/ficha')) {
     const cat = decodeURIComponent(hash.slice(4));
     Views.atsLista(cat);
     return;
   }
-  if (hash.startsWith('ats/ficha')) {
-    // La ficha se abre programáticamente desde atsLista, no por hash directo
-    return;
-  }
-
+  if (hash.startsWith('ats/ficha')) return;
   const fn = ROUTES[hash];
-  if (fn) fn();
-  else Views.inicio();
+  if (fn) fn(); else Views.inicio();
 }
 
-/* ── Navegación ── */
 function navigate(hash, pushState = true) {
   if (pushState) history.pushState({ hash }, '', '#' + hash);
   route(hash);
 }
 
 window.addEventListener('popstate', (e) => {
-  const hash = e.state?.hash || location.hash.slice(1) || 'inicio';
-  route(hash);
+  route(e.state?.hash || location.hash.slice(1) || 'inicio');
 });
 
 /* ── Mostrar vista ── */
@@ -75,25 +61,15 @@ function showView(id) {
 
 /* ── Breadcrumb ── */
 function setBreadcrumb(parts) {
-  // parts: array de {label, hash?}
   const bc = document.getElementById('breadcrumb');
   bc.innerHTML = parts.map((p, i) => {
-    if (i < parts.length - 1 && p.hash) {
+    if (i < parts.length - 1 && p.hash)
       return `<span class="bc-link" onclick="navigate('${p.hash}')">${p.label}</span>`;
-    }
     return `<span class="bc-current">${p.label}</span>`;
   }).join('<span class="bc-sep">›</span>');
 }
 
-/* ── Activar nav item en sidebar ── */
-function setActiveNav(selector) {
-  document.querySelectorAll('.nav-item, .sub-item, .sub-sub-item')
-    .forEach(el => el.classList.remove('active'));
-  const el = document.querySelector(selector);
-  if (el) el.classList.add('active');
-}
-
-/* ── Toggle submenú sidebar ── */
+/* ── Toggle submenú ── */
 function toggleSub(id, triggerEl) {
   const sub = document.getElementById(id);
   if (!sub) return;
@@ -101,14 +77,14 @@ function toggleSub(id, triggerEl) {
   if (triggerEl) triggerEl.classList.toggle('open');
 }
 
-/* ── Sidebar colapsar/expandir ── */
+/* ── Sidebar colapsar ── */
 function initSidebar() {
   const sidebar = document.getElementById('sidebar');
   const btn     = document.getElementById('sidebarToggle');
   btn.addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
-    btn.textContent  = sidebar.classList.contains('collapsed') ? '›' : '‹';
-    btn.style.left   = sidebar.classList.contains('collapsed') ? '36px' : '222px';
+    btn.textContent = sidebar.classList.contains('collapsed') ? '›' : '‹';
+    btn.style.left  = sidebar.classList.contains('collapsed') ? '36px' : '222px';
   });
 }
 
@@ -122,19 +98,17 @@ function toast(msg, type = 'ok') {
   t._timer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-/* ── Modal genérico de texto ── */
+/* ── Modal genérico ── */
 function openModal(title, label, placeholder, onConfirm) {
   const overlay = document.getElementById('modal-overlay');
-  document.getElementById('modal-title').textContent   = title;
-  document.getElementById('modal-label').textContent   = label;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-label').textContent = label;
   const input = document.getElementById('modal-input');
   input.placeholder = placeholder;
   input.value = '';
   input.style.borderColor = '';
   overlay.classList.add('show');
   setTimeout(() => input.focus(), 120);
-
-  // guardar callback
   overlay._onConfirm = onConfirm;
 }
 
@@ -151,15 +125,78 @@ function confirmModal() {
   if (cb) cb(val);
 }
 
+/* ================================================================
+   CATEGORÍAS DINÁMICAS EN SIDEBAR
+   ================================================================ */
+async function cargarCategoriasSidebar() {
+  const container = document.getElementById('sub-ats-categorias');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:var(--text-dim)">Cargando...</div>';
+
+  try {
+    const cats = await Storage.Categorias.getAll();
+    container.innerHTML = '';
+
+    if (cats.length === 0) {
+      container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:var(--text-dim)">Sin categorías aún</div>';
+      return;
+    }
+
+    cats.forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'sub-item';
+      div.dataset.cat = cat.nombre;
+      div.innerHTML = `
+        <span style="flex:1" onclick="navigate('ats/${encodeURIComponent(cat.nombre)}')">${escapeHtml(cat.nombre)}</span>
+        <span style="font-size:11px;opacity:.5;cursor:pointer;padding:0 6px"
+              onclick="event.stopPropagation();eliminarCategoria(${cat.id},'${escapeHtml(cat.nombre)}')"
+              title="Eliminar categoría">✕</span>`;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:#f87171">Error al cargar</div>';
+  }
+}
+
+async function nuevaCategoria() {
+  openModal(
+    'Nueva Categoría ATS',
+    'Nombre de la categoría',
+    'Ej: Pintura, Andamios, Civil...',
+    async (nombre) => {
+      try {
+        await Storage.Categorias.save({ nombre });
+        await cargarCategoriasSidebar();
+        toast('✓ Categoría creada');
+        // Navegar directo a la nueva categoría
+        navigate(`ats/${encodeURIComponent(nombre)}`);
+      } catch(e) {
+        toast('Error al crear categoría', 'error');
+      }
+    }
+  );
+}
+
+async function eliminarCategoria(id, nombre) {
+  if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSe eliminarán también todas sus fichas ATS.`)) return;
+  try {
+    await Storage.Categorias.remove(id);
+    await cargarCategoriasSidebar();
+    toast('Categoría eliminada');
+    navigate('inicio');
+  } catch(e) {
+    toast('Error al eliminar', 'error');
+  }
+}
+
 /* ── Init ── */
 async function init() {
-  try {
-    await Storage.init();
-  } catch (e) {
-    console.error('Storage init error:', e);
-  }
+  try { await Storage.init(); } catch(e) { console.error('Storage:', e); }
 
   initSidebar();
+
+  // Cargar categorías dinámicas en sidebar
+  await cargarCategoriasSidebar();
 
   // Abrir submenú ATS por defecto
   const subATS = document.getElementById('subATS');
@@ -168,14 +205,13 @@ async function init() {
     document.querySelector('[data-toggle="subATS"]')?.classList.add('open');
   }
 
-  // Aplicar config guardada
-  if (typeof loadConfig === 'function') {
-    loadConfig().catch(() => {});
-  }
+  if (typeof loadConfig === 'function') loadConfig().catch(() => {});
 
-  // Rutar al hash inicial
-  const hash = location.hash.slice(1) || 'inicio';
-  route(hash);
+  route(location.hash.slice(1) || 'inicio');
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+window.nuevaCategoria      = nuevaCategoria;
+window.eliminarCategoria   = eliminarCategoria;
+window.cargarCategoriasSidebar = cargarCategoriasSidebar;
