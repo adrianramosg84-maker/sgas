@@ -456,13 +456,32 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
   font-size: 11.5px; font-weight: 700; letter-spacing: .5px;
   color: var(--text); border: 1px solid var(--border);
 }
-.table-ats td { border: 1px solid var(--border); padding: 5px 7px; vertical-align: top; }
+.table-ats td {
+  border: 1px solid var(--border);
+  padding: 5px 7px;
+  vertical-align: top;
+  background: #ffffff;
+}
+.table-ats .td-num { background: var(--card); }
+.table-ats .td-del { background: var(--card); }
 .table-ats textarea {
-  width: 100%; background: transparent; border: none;
-  color: var(--text); font-size: 13px;
-  resize: vertical; min-height: 54px;
-  font-family: var(--font); line-height: 1.5;
+  width: 100%;
+  background: #ffffff;
+  border: none;
+  color: #1a1a1a;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 54px;
+  font-family: var(--font);
+  line-height: 1.6;
   padding: 4px;
+}
+.table-ats textarea:focus { outline: none; background: #f0f8ff; }
+.table-ats textarea:disabled {
+  background: #f5f5f5;
+  color: #222;
+  cursor: default;
+  opacity: 1;
 }
 .td-num { width: 34px; text-align: center; color: var(--text-dim); font-size: 12px; }
 .td-del { width: 34px; text-align: center; }
@@ -471,6 +490,41 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
   font-size: 16px; cursor: pointer; opacity: .6; line-height: 1;
 }
 .row-del-btn:hover { opacity: 1; }
+
+/* Observaciones */
+.obs-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 4px;
+}
+.obs-block h2 {
+  font-size: 13px; font-weight: 700;
+  color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: .8px; margin-bottom: 12px;
+}
+.obs-textarea {
+  width: 100%;
+  min-height: 100px;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  color: #1a1a1a;
+  font-size: 13.5px;
+  font-family: var(--font);
+  line-height: 1.7;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.obs-textarea:focus { outline: none; border-color: var(--accent); background: #f0f8ff; }
+.obs-textarea:disabled {
+  background: #f5f5f5;
+  color: #222;
+  cursor: default;
+  opacity: 1;
+  border-color: #ddd;
+}
 
 /* ================================================================
    EMERGENCIAS — Lista y Detalle
@@ -520,14 +574,18 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
   font-size: 11px; font-weight: 700; color: var(--text-dim);
   border: 1px solid var(--border); text-transform: uppercase; letter-spacing: .5px;
 }
-.emerg-table td { border: 1px solid var(--border); padding: 6px 10px; }
+.emerg-table td { border: 1px solid var(--border); padding: 6px 10px; background: #ffffff; }
 .emerg-table td input {
-  background: transparent; border: none; color: var(--text);
+  background: #ffffff; border: none; color: #1a1a1a;
   font-size: 13px; width: 100%; font-family: var(--font); padding: 2px 0;
 }
-.emerg-table td input:focus { outline: none; }
-.etd-num { width: 32px; text-align: center; color: var(--text-dim); font-size: 12px; }
-.etd-del { width: 32px; text-align: center; }
+.emerg-table td input:focus { outline: none; background: #f0f8ff; }
+.emerg-table td input:disabled {
+  background: #f5f5f5; color: #222;
+  cursor: default; opacity: 1;
+}
+.etd-num { width: 32px; text-align: center; color: var(--text-dim); font-size: 12px; background: var(--card) !important; }
+.etd-del { width: 32px; text-align: center; background: var(--card) !important; }
 
 /* ================================================================
    PLANOS Y DOCUMENTOS

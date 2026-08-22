@@ -120,11 +120,11 @@ function renderSubTabla(tipo, filas, editable, prefix, tagLabel) {
     tr.innerHTML = `
       <td class="etd-num">${i+1}</td>
       <td><input value="${escapeHtml(fila.tag || '')}" data-col="tag"
-          ${editable?'':'disabled'} placeholder="${prefix}-00${i+1}" /></td>
+          ${editable?'':'disabled'} lang="es" spellcheck="true" placeholder="${prefix}-00${i+1}" /></td>
       <td><input value="${escapeHtml(fila.ubicacion || '')}" data-col="ubicacion"
-          ${editable?'':'disabled'} placeholder="Ubicación..." /></td>
+          ${editable?'':'disabled'} lang="es" spellcheck="true" placeholder="Ubicación..." /></td>
       <td><input value="${escapeHtml(fila.zona || '')}" data-col="zona"
-          ${editable?'':'disabled'} placeholder="Zona..." /></td>
+          ${editable?'':'disabled'} lang="es" spellcheck="true" placeholder="Zona..." /></td>
       <td class="etd-del">
         <button class="row-del-btn" style="${editable?'':'display:none'}"
           onclick="eliminarFilaEmerg('${tipo}',${i})">✕</button>

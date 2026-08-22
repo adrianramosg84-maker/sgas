@@ -132,11 +132,17 @@ function renderFicha() {
   inputNombre.value    = ficha.nombre || '';
   inputNombre.disabled = !editable;
 
+  // Observaciones
+  const obsEl = document.getElementById('f-observaciones');
+  if (obsEl) {
+    obsEl.value    = ficha.observaciones || '';
+    obsEl.disabled = !editable;
+  }
+
   // Botones
   document.getElementById('ficha-actions-saved').style.display = editable ? 'none' : '';
   document.getElementById('ficha-actions-edit').style.display  = editable ? '' : 'none';
   document.getElementById('btn-add-row').style.display         = editable ? '' : 'none';
-
   // Tabla
   renderTablaAts(ficha.filas || [], editable);
 
@@ -151,9 +157,9 @@ function renderTablaAts(filas, editable) {
     tr.dataset.index = i;
     tr.innerHTML = `
       <td class="td-num">${i + 1}</td>
-      <td><textarea ${editable?'':'disabled'} data-col="paso">${escapeHtml(fila.paso || '')}</textarea></td>
-      <td><textarea ${editable?'':'disabled'} data-col="peligro">${escapeHtml(fila.peligro || '')}</textarea></td>
-      <td><textarea ${editable?'':'disabled'} data-col="control">${escapeHtml(fila.control || '')}</textarea></td>
+      <td><textarea ${editable?'':'disabled'} data-col="paso" lang="es" spellcheck="true">${escapeHtml(fila.paso || '')}</textarea></td>
+      <td><textarea ${editable?'':'disabled'} data-col="peligro" lang="es" spellcheck="true">${escapeHtml(fila.peligro || '')}</textarea></td>
+      <td><textarea ${editable?'':'disabled'} data-col="control" lang="es" spellcheck="true">${escapeHtml(fila.control || '')}</textarea></td>
       <td class="td-del">
         <button class="row-del-btn" style="${editable?'':'display:none'}"
           onclick="eliminarFila(${i})" title="Eliminar fila">✕</button>
@@ -176,9 +182,9 @@ function agregarFila() {
   tr.dataset.index = i;
   tr.innerHTML = `
     <td class="td-num">${i + 1}</td>
-    <td><textarea data-col="paso" placeholder="Describir el paso..."></textarea></td>
-    <td><textarea data-col="peligro" placeholder="Peligros asociados..."></textarea></td>
-    <td><textarea data-col="control" placeholder="Medidas preventivas..."></textarea></td>
+    <td><textarea data-col="paso" lang="es" spellcheck="true" placeholder="Describir el paso..."></textarea></td>
+    <td><textarea data-col="peligro" lang="es" spellcheck="true" placeholder="Peligros asociados..."></textarea></td>
+    <td><textarea data-col="control" lang="es" spellcheck="true" placeholder="Medidas preventivas..."></textarea></td>
     <td class="td-del">
       <button class="row-del-btn" onclick="eliminarFila(${i})" title="Eliminar fila">✕</button>
     </td>`;
@@ -224,6 +230,10 @@ async function guardarFicha() {
   // Leer filas del DOM
   ficha.filas  = leerFilasDOM();
   ficha.estado = 'guardado';
+
+  // Leer observaciones
+  const obsEl = document.getElementById('f-observaciones');
+  if (obsEl) ficha.observaciones = obsEl.value.trim();
 
   try {
     const id = await Storage.ATS.save(ficha);
