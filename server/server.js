@@ -21,6 +21,7 @@ getDb().then(() => {
   app.use('/api/emergencias', require('./routes/emergencias'));
   app.use('/api/documentos',  require('./routes/documentos'));
   app.use('/api/config',      require('./routes/config'));
+  app.use('/api/categorias',  require('./routes/categorias'));
 
   app.get('/api/ping', (req, res) => {
     res.json({ ok: true, timestamp: new Date().toISOString() });

@@ -61,6 +61,12 @@ async function getDb() {
       key         TEXT    PRIMARY KEY,
       value       TEXT    NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS categorias (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre      TEXT    NOT NULL UNIQUE,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   persist();
