@@ -1,58 +1,53 @@
-/* ================================================================
-   SGAS — routes/ats.js
-   ================================================================ */
+const express = require('express');
+const router  = express.Router();
+const { pool } = require('../database');
 
-const express          = require('express');
-const router           = express.Router();
-const { query, run, queryOne, lastId } = require('../database');
-
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { categoria } = req.query;
-    const rows = categoria
-      ? query('SELECT * FROM ats WHERE categoria = ? ORDER BY id DESC', [categoria])
-      : query('SELECT * FROM ats ORDER BY id DESC');
-    res.json(rows.map(parseAts));
+    const result = categoria
+      ? await pool.query('SELECT * FROM ats WHERE categoria = $1 ORDER BY id DESC', [categoria])
+      : await pool.query('SELECT * FROM ats ORDER BY id DESC');
+    res.json(result.rows.map(parseAts));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const row = queryOne('SELECT * FROM ats WHERE id = ?', [+req.params.id]);
-    if (!row) return res.status(404).json({ error: 'No encontrado' });
-    res.json(parseAts(row));
+    const result = await pool.query('SELECT * FROM ats WHERE id = $1', [req.params.id]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    res.json(parseAts(result.rows[0]));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { nombre, categoria, estado, filas, observaciones } = req.body;
     if (!nombre || !categoria) return res.status(400).json({ error: 'nombre y categoria requeridos' });
-    run(
-      `INSERT INTO ats (nombre, categoria, estado, filas, observaciones) VALUES (?,?,?,?,?)`,
+    const result = await pool.query(
+      `INSERT INTO ats (nombre, categoria, estado, filas, observaciones)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
       [nombre, categoria, estado||'borrador', JSON.stringify(filas||[]), observaciones||'']
     );
-    const id  = lastId();
-    const row = queryOne('SELECT * FROM ats WHERE id = ?', [id]);
-    res.status(201).json(parseAts(row));
+    res.status(201).json(parseAts(result.rows[0]));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { nombre, categoria, estado, filas, observaciones } = req.body;
-    run(
-      `UPDATE ats SET nombre=?, categoria=?, estado=?, filas=?, observaciones=?, updated_at=datetime('now') WHERE id=?`,
-      [nombre, categoria, estado||'guardado', JSON.stringify(filas||[]), observaciones||'', +req.params.id]
+    const result = await pool.query(
+      `UPDATE ats SET nombre=$1, categoria=$2, estado=$3, filas=$4, observaciones=$5, updated_at=NOW()
+       WHERE id=$6 RETURNING *`,
+      [nombre, categoria, estado||'guardado', JSON.stringify(filas||[]), observaciones||'', req.params.id]
     );
-    const row = queryOne('SELECT * FROM ats WHERE id = ?', [+req.params.id]);
-    res.json(parseAts(row));
+    res.json(parseAts(result.rows[0]));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    run('DELETE FROM ats WHERE id = ?', [+req.params.id]);
+    await pool.query('DELETE FROM ats WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

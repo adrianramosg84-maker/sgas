@@ -1,41 +1,37 @@
-/* ================================================================
-   SGAS — routes/documentos.js
-   ================================================================ */
-
 const express = require('express');
 const router  = express.Router();
-const { query, run, queryOne, lastId } = require('../database');
+const { pool } = require('../database');
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    res.json(query('SELECT id, nombre, fecha, mime_type, created_at FROM documentos ORDER BY id DESC'));
+    const result = await pool.query('SELECT id, nombre, fecha, mime_type, created_at FROM documentos ORDER BY id DESC');
+    res.json(result.rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const row = queryOne('SELECT * FROM documentos WHERE id = ?', [+req.params.id]);
-    if (!row) return res.status(404).json({ error: 'No encontrado' });
-    res.json(row);
+    const result = await pool.query('SELECT * FROM documentos WHERE id = $1', [req.params.id]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    res.json(result.rows[0]);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { nombre, fecha, base64, mimeType } = req.body;
     if (!nombre || !base64) return res.status(400).json({ error: 'nombre y base64 requeridos' });
-    run(
-      `INSERT INTO documentos (nombre, fecha, base64, mime_type) VALUES (?,?,?,?)`,
+    const result = await pool.query(
+      `INSERT INTO documentos (nombre, fecha, base64, mime_type) VALUES ($1,$2,$3,$4) RETURNING id, nombre, fecha, mime_type, created_at`,
       [nombre, fecha || new Date().toLocaleDateString('es-AR'), base64, mimeType || 'application/pdf']
     );
-    const row = queryOne('SELECT id, nombre, fecha, mime_type, created_at FROM documentos WHERE id = ?', [lastId()]);
-    res.status(201).json(row);
+    res.status(201).json(result.rows[0]);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    run('DELETE FROM documentos WHERE id = ?', [+req.params.id]);
+    await pool.query('DELETE FROM documentos WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
