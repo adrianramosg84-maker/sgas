@@ -1,0 +1,81 @@
+/* ================================================================
+   SGAS — Estilos de impresión / exportación PDF
+   ================================================================ */
+
+@media print {
+  /* Ocultar elementos de navegación */
+  header, aside, .sidebar-toggle, .breadcrumb,
+  .view-actions, .btn, #toast, .modal-overlay,
+  .row-del-btn, .td-del, .doc-del,
+  .btn-new-ficha, .search-box { display: none !important; }
+
+  /* Reset de layout para impresión */
+  body { display: block; height: auto; overflow: visible; background: #fff; color: #000; }
+  .body-wrap { display: block; }
+  main { overflow: visible; }
+  .content { padding: 0; overflow: visible; }
+
+  /* Mostrar solo la vista activa */
+  .view { display: none !important; }
+  .view.active { display: block !important; }
+
+  /* ── Encabezado del PDF ── */
+  .pdf-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #2d4a6e;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .pdf-header-logo { font-size: 22px; font-weight: 900; color: #2d4a6e; }
+  .pdf-header-title { font-size: 14px; font-weight: 700; color: #1e2640; }
+  .pdf-header-meta { font-size: 11px; color: #555; text-align: right; }
+
+  /* ── Título de la ficha ── */
+  .view-title { font-size: 16px; font-weight: 700; color: #1e2640; margin-bottom: 12px; }
+
+  /* ── Tabla ATS para PDF ── */
+  .table-ats { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .table-ats th {
+    background: #2d4a6e !important;
+    color: #fff !important;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .table-ats td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
+  .table-ats textarea { color: #000; font-size: 11px; min-height: auto; }
+
+  /* ── Tabla Emergencias para PDF ── */
+  .emerg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .emerg-table th {
+    background: #2d4a6e !important; color: #fff !important;
+    padding: 7px 10px; border: 1px solid #ccc;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .emerg-table td { border: 1px solid #ccc; padding: 6px 8px; }
+  .emerg-table td input { color: #000; }
+
+  /* ── Sub-títulos de emergencias ── */
+  .sub-table-title { color: #1e2640; font-size: 12px; font-weight: 700; margin: 14px 0 6px; }
+
+  /* ── Pie del PDF ── */
+  .pdf-footer {
+    display: flex !important;
+    justify-content: space-between;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    margin-top: 20px;
+    font-size: 10px;
+    color: #555;
+  }
+
+  /* Salto de página si es necesario */
+  .sub-table-block { page-break-inside: avoid; }
+  tr { page-break-inside: avoid; }
+
+  /* Forzar color en impresión */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
