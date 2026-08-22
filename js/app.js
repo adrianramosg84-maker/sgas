@@ -168,7 +168,6 @@ async function nuevaCategoria() {
         await Storage.Categorias.save({ nombre });
         await cargarCategoriasSidebar();
         toast('✓ Categoría creada');
-        // Navegar directo a la nueva categoría
         navigate(`ats/${encodeURIComponent(nombre)}`);
       } catch(e) {
         toast('Error al crear categoría', 'error');
