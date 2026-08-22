@@ -51,37 +51,12 @@
     </div>
     <div class="submenu" id="subATS">
 
-      <div class="sub-item" data-nav="ats/Aislamiento Térmico"
-           onclick="navigate('ats/Aislamiento%20Térmico')">Aislamiento Térmico</div>
-
-      <div class="sub-item" data-nav="ats/Andamios"
-           onclick="navigate('ats/Andamios')">Andamios</div>
-
-      <!-- Pintura (sub-submenú) -->
-      <div class="sub-item" onclick="toggleSub('subPintura', this)">Pintura ›</div>
-      <div class="submenu" id="subPintura" style="padding-left:12px">
-        <div class="sub-sub-item" data-nav="ats/Aplicación de Pintura"
-             onclick="navigate('ats/Aplicación%20de%20Pintura')">Aplicación de Pintura</div>
-        <div class="sub-sub-item" data-nav="ats/Prep. Superficie y Aplicación"
-             onclick="navigate('ats/Prep.%20Superficie%20y%20Aplicación')">Prep. Super. y Aplic.</div>
-        <div class="sub-sub-item" data-nav="ats/Garnet Prep. Superficie"
-             onclick="navigate('ats/Garnet%20Prep.%20Superficie')">Garn. Prep. Super.</div>
+         <div class="submenu open" id="subATS">
+      <div id="sub-ats-categorias"></div>
+      <div class="sub-item" onclick="nuevaCategoria()"
+           style="color:var(--accent);margin-top:4px">
+        ＋ Nueva Categoría
       </div>
-
-      <div class="sub-item" data-nav="ats/Civil"
-           onclick="navigate('ats/Civil')">Civil</div>
-      <div class="sub-item" data-nav="ats/Lavado Industrial"
-           onclick="navigate('ats/Lavado%20Industrial')">Lavado Industrial</div>
-      <div class="sub-item" data-nav="ats/Trabajos Verticales"
-           onclick="navigate('ats/Trabajos%20Verticales')">Trabajos Verticales</div>
-      <div class="sub-item" data-nav="ats/Izaje"
-           onclick="navigate('ats/Izaje')">Izaje</div>
-      <div class="sub-item" data-nav="ats/Mecánica"
-           onclick="navigate('ats/Mecánica')">Mecánica</div>
-      <div class="sub-item" data-nav="ats/Estructural"
-           onclick="navigate('ats/Estructural')">Estructural</div>
-      <div class="sub-item" data-nav="ats/Reparaciones"
-           onclick="navigate('ats/Reparaciones')">Reparaciones</div>
     </div>
 
     <hr class="sep">
