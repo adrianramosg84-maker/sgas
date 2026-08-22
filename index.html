@@ -42,17 +42,17 @@
     <hr class="sep">
     <div class="section-title">ATS</div>
 
-    <!-- ATS (con submenú) -->
+    <!-- ATS (con submenú dinámico) -->
     <div class="nav-item" data-toggle="subATS"
          onclick="toggleSub('subATS', this)">
       <span class="icon">📋</span>
       <span class="nav-label">ATS</span>
       <span class="nav-arrow">›</span>
     </div>
-    <div class="submenu" id="subATS">
-
-         <div class="submenu open" id="subATS">
+    <div class="submenu open" id="subATS">
+      <!-- Categorías cargadas dinámicamente -->
       <div id="sub-ats-categorias"></div>
+      <!-- Botón agregar categoría -->
       <div class="sub-item" onclick="nuevaCategoria()"
            style="color:var(--accent);margin-top:4px">
         ＋ Nueva Categoría
@@ -126,7 +126,35 @@
           <div class="stat-card"><div class="stat-num" id="stat-areas">—</div><div class="stat-label">Áreas de Emergencia</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-docs">—</div><div class="stat-label">Documentos</div></div>
         </div>
-        
+        <div class="section-head">Accesos rápidos</div>
+        <div class="quick-grid">
+          <div class="quick-card" onclick="navigate('ats/Pintura')">
+            <div class="qicon">🎨</div><div class="qname">Pintura</div>
+          </div>
+          <div class="quick-card" onclick="navigate('ats/Andamios')">
+            <div class="qicon">🏗️</div><div class="qname">Andamios</div>
+          </div>
+          <div class="quick-card" onclick="navigate('ats/Izaje')">
+            <div class="qicon">🏋️</div><div class="qname">Izaje</div>
+          </div>
+          <div class="quick-card" onclick="navigate('ats/Mecánica')">
+            <div class="qicon">🔩</div><div class="qname">Mecánica</div>
+          </div>
+          <div class="quick-card" onclick="navigate('ats/Lavado Industrial')">
+            <div class="qicon">💧</div><div class="qname">Lavado Industrial</div>
+          </div>
+          <div class="quick-card" onclick="navigate('emergencias')">
+            <div class="qicon">🚨</div><div class="qname">Emergencias</div>
+          </div>
+          <div class="quick-card" onclick="navigate('planos')">
+            <div class="qicon">📁</div><div class="qname">Planos</div>
+          </div>
+          <div class="quick-card" onclick="navigate('actividades-criticas')">
+            <div class="qicon">⚠️</div><div class="qname">Act. Críticas</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ════════════════════════════
            VISTA: LISTA ATS
       ════════════════════════════ -->
@@ -385,8 +413,8 @@
 <div id="toast"></div>
 
 <!-- ══ SCRIPTS ══ -->
-<script src="js/storage.js?v=2"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
 <script src="js/ats.js"></script>
 <script src="js/emergencias.js"></script>
 <script src="js/documentos.js"></script>
