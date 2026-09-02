@@ -93,6 +93,12 @@
       <span class="nav-label">Planos y Documentos</span>
     </div>
 
+    <div class="nav-item" data-nav="equipos"
+         onclick="navigate('equipos')">
+      <span class="icon">🔧</span>
+      <span class="nav-label">Equipos / TAG</span>
+    </div>
+
     <div class="nav-item" data-nav="config"
          onclick="navigate('config')">
       <span class="icon">⚙️</span>
@@ -310,9 +316,35 @@
       <!-- /emerg_detalle -->
 
       <!-- ════════════════════════════
-           VISTA: PLANOS Y DOCUMENTOS
+           VISTA: EQUIPOS / TAG
       ════════════════════════════ -->
-      <div class="view" id="view-planos">
+      <div class="view" id="view-equipos">
+        <div class="view-header">
+          <div class="view-title">Equipos / TAG</div>
+          <div class="view-actions">
+            <input class="search-box" placeholder="🔍 Buscar en todos los campos..."
+                   style="width:280px"
+                   oninput="buscarEquipos(this.value)" id="equipos-search" />
+            <button class="btn btn-primary" id="btn-cargar-excel"
+                    onclick="cargarExcelEquipos()">📂 Cargar Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <span id="equipos-info" style="font-size:12px;color:var(--text-dim)"></span>
+          <div id="equipos-paginacion" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+        <div id="equipos-tabla-wrap">
+          <div style="text-align:center;padding:60px;color:var(--text-dim)">
+            <div style="font-size:40px;margin-bottom:16px">📋</div>
+            <div style="font-size:15px;margin-bottom:8px">No hay datos cargados</div>
+            <div style="font-size:13px">Hacé clic en <strong>Cargar Excel</strong> para importar tu archivo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           VISTA: PLANOS Y DOCUMENTOS
+      ════════════════════════════ -->      <div class="view" id="view-planos">
         <div class="view-header">
           <div class="view-title">Planos y Documentos</div>
           <div class="view-actions">
@@ -383,12 +415,14 @@
 <div id="toast"></div>
 
 <!-- ══ SCRIPTS ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script src="js/storage.js"></script>
 <script src="js/app.js"></script>
 <script src="js/ats.js"></script>
 <script src="js/emergencias.js"></script>
 <script src="js/documentos.js"></script>
 <script src="js/config.js"></script>
+<script src="js/equipos.js"></script>
 
 <script>
   /* ── Filtro búsqueda ATS ── */

@@ -728,3 +728,92 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
 }
 #toast.show { opacity: 1; transform: translateY(0); }
 #toast.toast-error { background: var(--btn-del); }
+
+/* ================================================================
+   EQUIPOS / TAG
+   ================================================================ */
+
+/* Tabla principal */
+.equip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.equip-table thead th {
+  background: var(--header);
+  color: var(--text);
+  padding: 0;
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  min-width: 120px;
+}
+
+.equip-th-wrap {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 4px;
+  gap: 4px;
+}
+
+.equip-col-filter {
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 6px;
+  width: 100%;
+  font-family: var(--font);
+}
+.equip-col-filter:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(0,0,0,.5);
+}
+.equip-col-filter::placeholder { color: var(--text-dim); font-size: 10px; }
+
+.equip-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+.equip-table tbody tr:hover { background: rgba(0,180,216,.07); }
+.equip-table tbody tr:nth-child(even) { background: rgba(0,0,0,.1); }
+.equip-table tbody tr:nth-child(even):hover { background: rgba(0,180,216,.07); }
+
+.equip-table td {
+  padding: 6px 10px;
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equip-table td:last-child { border-right: none; }
+
+/* Paginación */
+.eq-pg-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.eq-pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.eq-pg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.eq-pg-btn:disabled { opacity: .35; cursor: not-allowed; }
+.eq-pg-dots { padding: 0 4px; color: var(--text-dim); line-height: 32px; font-size: 13px; }
