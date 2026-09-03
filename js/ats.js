@@ -234,6 +234,20 @@ async function eliminarFicha(id) {
 /* ================================================================
    EXPORTAR PDF
    ================================================================ */
+
+// Convierte texto con saltos de línea en HTML con <br> respetando el formato
+function textoAPdf(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    // Respetar saltos de línea reales
+    .replace(/\n/g, '<br>')
+    // Convertir separadores " / " en salto de línea si no hay \n
+    .replace(/ \/ /g, '<br>');
+}
+
 async function exportarPdfAts(id) {
   let ficha = AtsState.fichaActual;
   if (id) { try { ficha = await Storage.ATS.getById(id); } catch(e) {} }
@@ -242,43 +256,60 @@ async function exportarPdfAts(id) {
   const fechaHoy = new Date().toLocaleDateString('es-AR');
   const filasHtml = (ficha.filas || []).map((f, i) => `
     <tr>
-      <td style="text-align:center;width:32px;border:1px solid #ccc;padding:6px">${i+1}</td>
-      <td style="border:1px solid #ccc;padding:6px">${escapeHtml(f.paso)}</td>
-      <td style="border:1px solid #ccc;padding:6px">${escapeHtml(f.peligro)}</td>
-      <td style="border:1px solid #ccc;padding:6px">${escapeHtml(f.control)}</td>
+      <td style="text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.paso)}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.peligro)}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.control)}</td>
     </tr>`).join('');
 
   const obsHtml = ficha.observaciones
-    ? `<div style="margin-top:16px"><strong>Observaciones:</strong><p style="margin-top:6px">${escapeHtml(ficha.observaciones)}</p></div>`
+    ? `<div style="margin-top:16px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px">
+        <strong style="font-size:11px;text-transform:uppercase;color:#555">Observaciones / Recomendaciones</strong>
+        <p style="margin-top:6px;font-size:11px;line-height:1.6">${textoAPdf(ficha.observaciones)}</p>
+       </div>`
     : '';
 
   const html = `
-    <div style="font-family:Arial,sans-serif;padding:20px;color:#000">
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #2d4a6e;padding-bottom:10px;margin-bottom:16px">
-        <div style="font-size:20px;font-weight:900;color:#2d4a6e">SGAS</div>
-        <div style="font-size:14px;font-weight:700">ANÁLISIS DE TRABAJO SEGURO</div>
-        <div style="font-size:11px;color:#555">${fechaHoy}</div>
+    <div style="font-family:Arial,sans-serif;padding:12px;color:#000;font-size:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #2d4a6e;padding-bottom:8px;margin-bottom:12px">
+        <div style="font-size:16px;font-weight:900;color:#2d4a6e">SGAS</div>
+        <div style="text-align:center">
+          <div style="font-size:12px;font-weight:700;color:#1e2640">ANÁLISIS DE TRABAJO SEGURO (ATS)</div>
+          <div style="font-size:9px;color:#555;margin-top:2px">${escapeHtml(ficha.categoria)}</div>
+        </div>
+        <div style="text-align:right;font-size:9px;color:#555">${fechaHoy}</div>
       </div>
-      <div style="margin-bottom:14px">
-        <strong>Categoría:</strong> ${escapeHtml(ficha.categoria)} &nbsp;&nbsp;
+      <div style="margin-bottom:10px;padding:6px 8px;background:#f0f4f8;border-radius:4px;font-size:10px">
         <strong>Tarea:</strong> ${escapeHtml(ficha.nombre)}
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <table style="width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed">
+        <colgroup>
+          <col style="width:24px">
+          <col style="width:25%">
+          <col style="width:37%">
+          <col style="width:37%">
+        </colgroup>
         <thead>
           <tr>
-            <th style="background:#2d4a6e;color:#fff;padding:8px;border:1px solid #ccc;width:32px">#</th>
-            <th style="background:#2d4a6e;color:#fff;padding:8px;border:1px solid #ccc">Pasos de la tarea</th>
-            <th style="background:#2d4a6e;color:#fff;padding:8px;border:1px solid #ccc">Peligros identificados</th>
-            <th style="background:#2d4a6e;color:#fff;padding:8px;border:1px solid #ccc">Medidas de control</th>
+            <th style="background:#2d4a6e;color:#fff;padding:7px 4px;border:1px solid #bbb;text-align:center">#</th>
+            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+              Pasos de la tarea<br><span style="font-weight:400;font-size:8px;opacity:.8">Describe los pasos a seguir para ejecutar la actividad</span>
+            </th>
+            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+              Peligros identificados<br><span style="font-weight:400;font-size:8px;opacity:.8">Detalla los peligros asociados a cada paso</span>
+            </th>
+            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+              Medidas de control<br><span style="font-weight:400;font-size:8px;opacity:.8">Especifica acciones para prevenir o mitigar cada riesgo</span>
+            </th>
           </tr>
         </thead>
         <tbody>${filasHtml}</tbody>
       </table>
       ${obsHtml}
-      <div style="margin-top:20px;border-top:1px solid #ccc;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#555">
-        <span>Categoría: ${escapeHtml(ficha.categoria)}</span>
+      <div style="margin-top:14px;border-top:1px solid #ccc;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#555">
+        <span>${escapeHtml(ficha.categoria)}</span>
         <span>Fecha: ${fechaHoy}</span>
-        <span style="font-weight:700;color:#2d6a4f">ESTADO: APROBADO</span>
+        <span style="font-weight:700;color:#2d6a4f">✓ ESTADO: APROBADO</span>
       </div>
     </div>`;
 
@@ -286,10 +317,17 @@ async function exportarPdfAts(id) {
 
   if (typeof html2pdf !== 'undefined') {
     html2pdf().set({
-      margin: 10, filename: nombreArchivo,
-      html2canvas: { scale: 2 },
+      margin: [8,8,8,8],
+      filename: nombreArchivo,
+      html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     }).from(html).save();
+  } else {
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nombreArchivo}</title></head><body>${html}</body></html>`);
+    win.document.close(); win.print();
+  }
+}
   } else {
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nombreArchivo}</title></head><body>${html}</body></html>`);
