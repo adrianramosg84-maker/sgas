@@ -252,7 +252,7 @@ async function exportarPdfAts(id) {
 
   const fechaHoy = new Date().toLocaleDateString('es-AR');
   const filasHtml = (ficha.filas || []).map((f, i) => `
-    <tr>
+    <tr style="page-break-inside:avoid">
       <td style="text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</td>
       <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.paso)}</td>
       <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.peligro)}</td>
@@ -317,7 +317,8 @@ async function exportarPdfAts(id) {
       margin: [8,8,8,8],
       filename: nombreArchivo,
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['avoid-all', 'css'] }
     }).from(html).save();
   } else {
     const win = window.open('', '_blank');
