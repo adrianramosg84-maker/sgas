@@ -232,17 +232,12 @@ async function eliminarFicha(id) {
 }
 
 /* ================================================================
-   EXPORTAR PDF
+   EXPORTAR PDF — jsPDF + autoTable (sin cortes de fila)
    ================================================================ */
 
-// Convierte texto con saltos de línea en HTML con <br>
 function textoAPdf(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/\n/g, '<br>');
+  return String(str);
 }
 
 async function exportarPdfAts(id) {
@@ -250,75 +245,116 @@ async function exportarPdfAts(id) {
   if (id) { try { ficha = await Storage.ATS.getById(id); } catch(e) {} }
   if (!ficha) return;
 
-  const fechaHoy = new Date().toLocaleDateString('es-AR');
-  const filasHtml = (ficha.filas || []).map((f, i) => `
-    <div style="display:table-row;page-break-inside:avoid;break-inside:avoid">
-      <div style="display:table-cell;text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</div>
-      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.paso)}</div>
-      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.peligro)}</div>
-      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.control)}</div>
-    </div>`).join('');
-
-  const obsHtml = ficha.observaciones
-    ? `<div style="margin-top:16px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px">
-        <strong style="font-size:11px;text-transform:uppercase;color:#555">Observaciones / Recomendaciones</strong>
-        <p style="margin-top:6px;font-size:11px;line-height:1.6">${textoAPdf(ficha.observaciones)}</p>
-       </div>`
-    : '';
-
-  const html = `
-    <div style="font-family:Arial,sans-serif;padding:12px;color:#000;font-size:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #2d4a6e;padding-bottom:8px;margin-bottom:12px">
-        <div style="font-size:16px;font-weight:900;color:#2d4a6e">SGAS</div>
-        <div style="text-align:center">
-          <div style="font-size:12px;font-weight:700;color:#1e2640">ANÁLISIS DE TRABAJO SEGURO (ATS)</div>
-          <div style="font-size:9px;color:#555;margin-top:2px">${escapeHtml(ficha.categoria)}</div>
-        </div>
-        <div style="text-align:right;font-size:9px;color:#555">${fechaHoy}</div>
-      </div>
-      <div style="margin-bottom:10px;padding:6px 8px;background:#f0f4f8;border-radius:4px;font-size:10px">
-        <strong>Tarea:</strong> ${escapeHtml(ficha.nombre)}
-      </div>
-      <div style="display:table;width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed;border-spacing:0">
-        <div style="display:table-header-group">
-          <div style="display:table-row">
-            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 4px;border:1px solid #bbb;text-align:center;width:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">#</div>
-            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:25%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
-              Pasos de la tarea<br><span style="font-weight:400;font-size:8px;opacity:.8">Describe los pasos a seguir para ejecutar la actividad</span>
-            </div>
-            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:37%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
-              Peligros identificados<br><span style="font-weight:400;font-size:8px;opacity:.8">Detalla los peligros asociados a cada paso</span>
-            </div>
-            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:37%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
-              Medidas de control<br><span style="font-weight:400;font-size:8px;opacity:.8">Especifica acciones para prevenir o mitigar cada riesgo</span>
-            </div>
-          </div>
-        </div>
-        <div style="display:table-row-group">${filasHtml}</div>
-      </div>
-      ${obsHtml}
-      <div style="margin-top:14px;border-top:1px solid #ccc;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#555">
-        <span>${escapeHtml(ficha.categoria)}</span>
-        <span>Fecha: ${fechaHoy}</span>
-        <span style="font-weight:700;color:#2d6a4f">✓ ESTADO: APROBADO</span>
-      </div>
-    </div>`;
-
-  const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g,'-')}.pdf`;
-
-  if (typeof html2pdf !== 'undefined') {
-    html2pdf().set({
-      margin: [8,8,8,8],
-      filename: nombreArchivo,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['avoid-all', 'css'] }
-    }).from(html).save();
-  } else {
-    const win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nombreArchivo}</title></head><body>${html}</body></html>`);
-    win.document.close(); win.print();
+  if (!window.jspdf) {
+    toast('Librería PDF no cargada, intentá de nuevo', 'error');
+    return;
   }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const fechaHoy = new Date().toLocaleDateString('es-AR');
+  const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g,'-')}.pdf`;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // Encabezado página 1
+  const dibujarHeader = (pg) => {
+    doc.setFillColor(45, 74, 110);
+    doc.rect(0, 0, pageW, pg === 1 ? 18 : 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(pg === 1 ? 14 : 10);
+    doc.text('SGAS', 10, pg === 1 ? 11 : 8);
+    doc.setFontSize(pg === 1 ? 11 : 9);
+    doc.text('ANÁLISIS DE TRABAJO SEGURO (ATS)', pageW / 2, pg === 1 ? 11 : 8, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(fechaHoy, pageW - 10, pg === 1 ? 11 : 8, { align: 'right' });
+  };
+
+  dibujarHeader(1);
+
+  // Subtítulo
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Categoría: ${ficha.categoria}`, 10, 24);
+  doc.setFont('helvetica', 'bold');
+  const nombreLines = doc.splitTextToSize(`Tarea: ${ficha.nombre}`, pageW - 20);
+  doc.text(nombreLines, 10, 30);
+
+  // Tabla con autoTable
+  const body = (ficha.filas || []).map((f, i) => [
+    i + 1,
+    textoAPdf(f.paso),
+    textoAPdf(f.peligro),
+    textoAPdf(f.control),
+  ]);
+
+  doc.autoTable({
+    startY: 36,
+    head: [[
+      '#',
+      'Pasos de la tarea\nDescribe los pasos a seguir para ejecutar la actividad',
+      'Peligros identificados\nDetalla los peligros asociados a cada paso',
+      'Medidas de control\nEspecifica acciones para prevenir o mitigar cada riesgo',
+    ]],
+    body,
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 4, right: 5, bottom: 4, left: 5 },
+      valign: 'top',
+      lineColor: [180, 180, 180],
+      lineWidth: 0.3,
+      overflow: 'linebreak',
+      font: 'helvetica',
+    },
+    headStyles: {
+      fillColor: [45, 74, 110],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+      valign: 'middle',
+      halign: 'left',
+    },
+    columnStyles: {
+      0: { cellWidth: 10,  halign: 'center', fontStyle: 'bold' },
+      1: { cellWidth: 68 },
+      2: { cellWidth: 95 },
+      3: { cellWidth: 95 },
+    },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    rowPageBreak: 'avoid',
+    showHead: 'everyPage',
+    margin: { top: 16, left: 10, right: 10, bottom: 14 },
+    didDrawPage: (data) => {
+      const pg = doc.internal.getCurrentPageInfo().pageNumber;
+      if (pg > 1) dibujarHeader(pg);
+      // Pie
+      doc.setTextColor(120, 120, 120);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${ficha.categoria} — ${ficha.nombre}`, 10, pageH - 5);
+      doc.text(`Página ${pg}`, pageW / 2, pageH - 5, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(45, 106, 79);
+      doc.text('ESTADO: APROBADO', pageW - 10, pageH - 5, { align: 'right' });
+    },
+  });
+
+  // Observaciones
+  if (ficha.observaciones) {
+    const finalY = (doc.lastAutoTable?.finalY || 36) + 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Observaciones / Recomendaciones:', 10, finalY);
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(ficha.observaciones, pageW - 20);
+    doc.text(lines, 10, finalY + 5);
+  }
+
+  doc.save(nombreArchivo);
 }
 
 /* ── Registrar vistas en el router ── */
