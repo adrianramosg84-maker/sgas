@@ -252,12 +252,12 @@ async function exportarPdfAts(id) {
 
   const fechaHoy = new Date().toLocaleDateString('es-AR');
   const filasHtml = (ficha.filas || []).map((f, i) => `
-    <tr style="page-break-inside:avoid">
-      <td style="text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.paso)}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.peligro)}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.control)}</td>
-    </tr>`).join('');
+    <div style="display:table-row;page-break-inside:avoid;break-inside:avoid">
+      <div style="display:table-cell;text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</div>
+      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.paso)}</div>
+      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.peligro)}</div>
+      <div style="display:table-cell;border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.control)}</div>
+    </div>`).join('');
 
   const obsHtml = ficha.observaciones
     ? `<div style="margin-top:16px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px">
@@ -279,29 +279,23 @@ async function exportarPdfAts(id) {
       <div style="margin-bottom:10px;padding:6px 8px;background:#f0f4f8;border-radius:4px;font-size:10px">
         <strong>Tarea:</strong> ${escapeHtml(ficha.nombre)}
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed">
-        <colgroup>
-          <col style="width:24px">
-          <col style="width:25%">
-          <col style="width:37%">
-          <col style="width:37%">
-        </colgroup>
-        <thead>
-          <tr>
-            <th style="background:#2d4a6e;color:#fff;padding:7px 4px;border:1px solid #bbb;text-align:center">#</th>
-            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+      <div style="display:table;width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed;border-spacing:0">
+        <div style="display:table-header-group">
+          <div style="display:table-row">
+            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 4px;border:1px solid #bbb;text-align:center;width:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">#</div>
+            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:25%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
               Pasos de la tarea<br><span style="font-weight:400;font-size:8px;opacity:.8">Describe los pasos a seguir para ejecutar la actividad</span>
-            </th>
-            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+            </div>
+            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:37%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
               Peligros identificados<br><span style="font-weight:400;font-size:8px;opacity:.8">Detalla los peligros asociados a cada paso</span>
-            </th>
-            <th style="background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left">
+            </div>
+            <div style="display:table-cell;background:#2d4a6e;color:#fff;padding:7px 8px;border:1px solid #bbb;text-align:left;width:37%;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:700;font-size:10px">
               Medidas de control<br><span style="font-weight:400;font-size:8px;opacity:.8">Especifica acciones para prevenir o mitigar cada riesgo</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>${filasHtml}</tbody>
-      </table>
+            </div>
+          </div>
+        </div>
+        <div style="display:table-row-group">${filasHtml}</div>
+      </div>
       ${obsHtml}
       <div style="margin-top:14px;border-top:1px solid #ccc;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#555">
         <span>${escapeHtml(ficha.categoria)}</span>
