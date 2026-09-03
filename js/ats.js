@@ -325,12 +325,6 @@ async function exportarPdfAts(id) {
     win.document.close(); win.print();
   }
 }
-  } else {
-    const win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nombreArchivo}</title></head><body>${html}</body></html>`);
-    win.document.close(); win.print();
-  }
-}
 
 /* ── Registrar vistas en el router ── */
 Views.atsLista = (cat) => renderAtsLista(cat);
