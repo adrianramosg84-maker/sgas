@@ -39,7 +39,7 @@ function route(hash) {
     Views.atsLista(cat);
     return;
   }
-  if (hash.startsWith('ats/ficha')) return;
+  if (hash.startsWith('ats/ficha/')) {     const id = parseInt(hash.slice(10));     if (id) { abrirFichaSaved(id); return; }   }   if (hash.startsWith('ats/ficha')) return;
   const fn = ROUTES[hash];
   if (fn) fn(); else Views.inicio();
 }
