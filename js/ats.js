@@ -235,17 +235,14 @@ async function eliminarFicha(id) {
    EXPORTAR PDF
    ================================================================ */
 
-// Convierte texto con saltos de línea en HTML con <br> respetando el formato
+// Convierte texto con saltos de línea en HTML con <br>
 function textoAPdf(str) {
   if (!str) return '';
   return String(str)
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
-    // Respetar saltos de línea reales
-    .replace(/\n/g, '<br>')
-    // Convertir separadores " / " en salto de línea si no hay \n
-    .replace(/ \/ /g, '<br>');
+    .replace(/\n/g, '<br>');
 }
 
 async function exportarPdfAts(id) {
@@ -257,9 +254,9 @@ async function exportarPdfAts(id) {
   const filasHtml = (ficha.filas || []).map((f, i) => `
     <tr>
       <td style="text-align:center;border:1px solid #bbb;padding:6px 4px;vertical-align:top;font-weight:700;width:24px">${i+1}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.paso)}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.peligro)}</td>
-      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.5;word-wrap:break-word;white-space:pre-wrap">${textoAPdf(f.control)}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.paso)}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.peligro)}</td>
+      <td style="border:1px solid #bbb;padding:6px 8px;vertical-align:top;line-height:1.6;word-wrap:break-word">${textoAPdf(f.control)}</td>
     </tr>`).join('');
 
   const obsHtml = ficha.observaciones
