@@ -102,19 +102,30 @@ function fileToBase64(file) {
 /* ================================================================
    ABRIR DOCUMENTO
    ================================================================ */
-function abrirDocumento(doc) {
-  if (!doc.base64) { toast('Documento no disponible', 'error'); return; }
-  // Abrir en pestaña nueva desde base64
-  const win = window.open();
-  win.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head><title>${escapeHtml(doc.nombre)}</title></head>
-    <body style="margin:0;padding:0;height:100vh">
-      <iframe src="${doc.base64}" style="width:100%;height:100vh;border:none"></iframe>
-    </body>
-    </html>`);
-  win.document.close();
+async function abrirDocumento(doc) {
+  try {
+    // En modo RED el listado no trae base64, hay que pedirlo por ID
+    let base64 = doc.base64;
+    if (!base64 && doc.id) {
+      toast('Cargando documento...');
+      const completo = await Storage.Documentos.getById(doc.id);
+      base64 = completo?.base64;
+    }
+    if (!base64) { toast('Documento no disponible', 'error'); return; }
+
+    // Convertir base64 a Blob y abrir en nueva pestaña
+    const byteString  = atob(base64.split(',')[1] || base64);
+    const ab          = new ArrayBuffer(byteString.length);
+    const ia          = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blob        = new Blob([ab], { type: 'application/pdf' });
+    const url         = URL.createObjectURL(blob);
+    const win         = window.open(url, '_blank');
+    if (!win) toast('Permitir popups para abrir documentos', 'error');
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch(e) {
+    toast('Error al abrir el documento', 'error');
+  }
 }
 
 /* ================================================================
