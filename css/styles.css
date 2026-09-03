@@ -817,3 +817,9 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
 .eq-pg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 .eq-pg-btn:disabled { opacity: .35; cursor: not-allowed; }
 .eq-pg-dots { padding: 0 4px; color: var(--text-dim); line-height: 32px; font-size: 13px; }
+
+/* ── Links en sidebar sin decoración ── */
+a.nav-item, a.sub-item, a.sub-sub-item {
+  text-decoration: none;
+  display: flex;
+}
