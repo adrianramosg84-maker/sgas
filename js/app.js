@@ -145,13 +145,14 @@ async function cargarCategoriasSidebar() {
     }
 
     cats.forEach(cat => {
-      const div = document.createElement('div');
+      const div = document.createElement('a');
       div.className = 'sub-item';
+      div.href = `#ats/${encodeURIComponent(cat.nombre)}`;
       div.dataset.cat = cat.nombre;
       div.innerHTML = `
-        <span style="flex:1" onclick="navigate('ats/${encodeURIComponent(cat.nombre)}')">${escapeHtml(cat.nombre)}</span>
+        <span style="flex:1" onclick="event.preventDefault();navigate('ats/${encodeURIComponent(cat.nombre)}')">${escapeHtml(cat.nombre)}</span>
         <span style="font-size:11px;opacity:.5;cursor:pointer;padding:0 6px"
-              onclick="event.stopPropagation();eliminarCategoria(${cat.id},'${escapeHtml(cat.nombre)}')"
+              onclick="event.stopPropagation();event.preventDefault();eliminarCategoria(${cat.id},'${escapeHtml(cat.nombre)}')"
               title="Eliminar categoría">✕</span>`;
       container.appendChild(div);
     });

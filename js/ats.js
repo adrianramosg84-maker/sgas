@@ -43,7 +43,14 @@ async function renderAtsLista(categoria) {
     fichas.forEach(ficha => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="cursor:pointer" onclick="abrirFichaSaved(${ficha.id})">${escapeHtml(ficha.nombre)}</td>
+        <td>
+          <a href="#ats/ficha/${ficha.id}" 
+             onclick="event.preventDefault();abrirFichaSaved(${ficha.id})"
+             style="color:var(--text);text-decoration:none;cursor:pointer"
+             onmouseover="this.style.color='var(--accent)'"
+             onmouseout="this.style.color='var(--text)'"
+          >${escapeHtml(ficha.nombre)}</a>
+        </td>
         <td><span class="badge ${ficha.estado === 'guardado' ? 'badge-saved' : 'badge-draft'}">
           ${ficha.estado === 'guardado' ? 'Guardado' : 'Borrador'}
         </span></td>

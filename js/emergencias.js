@@ -40,12 +40,16 @@ async function renderEmergLista() {
       card.className = 'emerg-area-card';
       card.innerHTML = `
         <div style="flex:1;min-width:0;cursor:pointer" onclick="abrirAreaDetalle(${area.id})">
-          <div class="emerg-area-name">🏭 ${escapeHtml(area.nombre)}</div>
-          <div class="emerg-area-meta">
-            🧯 ${area.extintores?.length || 0} extintores &nbsp;·&nbsp;
-            🚿 ${area.duchas?.length    || 0} duchas/lavaojos &nbsp;·&nbsp;
-            🔔 ${area.alarmas?.length   || 0} alarmas
-          </div>
+          <a href="#emergencias/${area.id}" 
+             onclick="event.preventDefault();abrirAreaDetalle(${area.id})"
+             style="text-decoration:none;color:inherit;display:block">
+            <div class="emerg-area-name">🏭 ${escapeHtml(area.nombre)}</div>
+            <div class="emerg-area-meta">
+              🧯 ${area.extintores?.length || 0} extintores &nbsp;·&nbsp;
+              🚿 ${area.duchas?.length    || 0} duchas/lavaojos &nbsp;·&nbsp;
+              🔔 ${area.alarmas?.length   || 0} alarmas
+            </div>
+          </a>
         </div>
         <div class="emerg-area-actions">
           <button class="icon-btn ib-edit" title="Editar" onclick="event.stopPropagation();abrirAreaEdit(${area.id})">✏️</button>
