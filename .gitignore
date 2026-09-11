@@ -1,0 +1,5 @@
+server/node_modules/
+server/sgas.db
+server/sgas.db-shm
+server/sgas.db-wal
+*.env
