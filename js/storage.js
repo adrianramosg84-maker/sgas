@@ -132,11 +132,30 @@ const Storage = (() => {
      ================================================================ */
   const ATS = {
     getAll: async () => {
-      if (modoRed) return apiFetch('/api/ats');
+      if (modoRed) {
+        // Traer todas las fichas paginando automáticamente
+        let page = 1, all = [];
+        while (true) {
+          const resp = await apiFetch(`/api/ats?page=${page}&limit=50`);
+          all = all.concat(resp.data);
+          if (page >= resp.pages) break;
+          page++;
+        }
+        return all;
+      }
       return idbGetAll('ats');
     },
     getByCategoria: async (cat) => {
-      if (modoRed) return apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}`);
+      if (modoRed) {
+        let page = 1, all = [];
+        while (true) {
+          const resp = await apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}&page=${page}&limit=50`);
+          all = all.concat(resp.data);
+          if (page >= resp.pages) break;
+          page++;
+        }
+        return all;
+      }
       return idbGetByIndex('ats', 'categoria', cat);
     },
     getById: async (id) => {
@@ -266,6 +285,30 @@ const Storage = (() => {
     },
   };
 
-  return { init, getModo, ATS, Emergencias, Documentos, Config, Categorias };
+  /* ================================================================
+     API PÚBLICA — EQUIPOS
+     ================================================================ */
+  const Equipos = {
+    getAll: async () => {
+      if (modoRed) return apiFetch('/api/equipos');
+      return []; // local: se maneja por separado en equipos.js con su propia DB
+    },
+    getById: async (id) => {
+      if (modoRed) return apiFetch(`/api/equipos/${id}`);
+      return null;
+    },
+    save: async (record) => {
+      if (modoRed) {
+        const r = await apiFetch('/api/equipos', { method: 'POST', body: record });
+        return r.id;
+      }
+      return null; // local: se maneja por separado en equipos.js
+    },
+    remove: async (id) => {
+      if (modoRed) return apiFetch(`/api/equipos/${id}`, { method: 'DELETE' });
+    },
+  };
+
+  return { init, getModo, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
 
 })();

@@ -5,10 +5,34 @@ const { pool } = require('../database');
 router.get('/', async (req, res) => {
   try {
     const { categoria } = req.query;
-    const result = categoria
-      ? await pool.query('SELECT * FROM ats WHERE categoria = $1 ORDER BY id DESC', [categoria])
-      : await pool.query('SELECT * FROM ats ORDER BY id DESC');
-    res.json(result.rows.map(parseAts));
+    const page    = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit   = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset  = (page - 1) * limit;
+
+    let result, countResult;
+    if (categoria) {
+      [result, countResult] = await Promise.all([
+        pool.query(
+          'SELECT * FROM ats WHERE categoria = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
+          [categoria, limit, offset]
+        ),
+        pool.query('SELECT COUNT(*) FROM ats WHERE categoria = $1', [categoria]),
+      ]);
+    } else {
+      [result, countResult] = await Promise.all([
+        pool.query('SELECT * FROM ats ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]),
+        pool.query('SELECT COUNT(*) FROM ats'),
+      ]);
+    }
+
+    const total = parseInt(countResult.rows[0].count);
+    res.json({
+      data:    result.rows.map(parseAts),
+      total,
+      page,
+      limit,
+      pages:   Math.ceil(total / limit),
+    });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

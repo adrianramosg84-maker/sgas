@@ -4,7 +4,8 @@
    - Carga Excel con Web Worker (no bloquea la UI)
    - Búsqueda general + filtro por columna
    - Paginación 200 filas por página
-   - Datos en memoria (sesión) + IndexedDB como caché
+   - Datos en memoria (sesión) + IndexedDB como caché local
+   - Sincronización con servidor en modo red
    ================================================================ */
 
 const EquiposState = {
@@ -33,7 +34,27 @@ async function renderEquipos() {
     return;
   }
 
-  // Intentar cargar desde IndexedDB
+  // Modo RED: intentar cargar desde el servidor
+  if (Storage.getModo() === 'red') {
+    try {
+      mostrarProgreso('Cargando equipos del servidor...');
+      const lista = await Storage.Equipos.getAll();
+      if (lista && lista.length > 0) {
+        // Cargar el más reciente con datos completos
+        const completo = await Storage.Equipos.getById(lista[0].id);
+        if (completo && completo.datos && completo.datos.length > 0) {
+          EquiposState.columnas  = completo.columnas;
+          EquiposState.datos     = completo.datos;
+          EquiposState.filtrados = completo.datos;
+          mostrarTablaEquipos();
+          showView('equipos');
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Modo LOCAL: intentar cargar desde IndexedDB
   try {
     const saved = await idbGetEquipos();
     if (saved && saved.datos && saved.datos.length > 0) {
@@ -132,18 +153,35 @@ function cargarExcelEquipos() {
           if (search) search.value = '';
 
           mostrarProgreso('Guardando en caché...');
-          try {
-            await idbSaveEquipos({
-              columnas: EquiposState.columnas,
-              datos:    EquiposState.datos,
-            });
-          } catch(e) {
-            console.warn('No se pudo guardar en IndexedDB (datos muy grandes), se usará solo en memoria');
+
+          // Guardar en servidor (modo red) o IndexedDB (modo local)
+          if (Storage.getModo() === 'red') {
+            try {
+              const nombreArchivo = file.name.replace(/\.[^.]+$/, '');
+              await Storage.Equipos.save({
+                nombre:   nombreArchivo,
+                columnas: EquiposState.columnas,
+                datos:    EquiposState.datos,
+              });
+              toast(`✓ ${msg.total.toLocaleString()} equipos cargados y sincronizados`);
+            } catch(e) {
+              console.warn('No se pudo sincronizar con el servidor:', e);
+              toast(`✓ ${msg.total.toLocaleString()} equipos cargados (solo local)`);
+            }
+          } else {
+            try {
+              await idbSaveEquipos({
+                columnas: EquiposState.columnas,
+                datos:    EquiposState.datos,
+              });
+            } catch(e) {
+              console.warn('No se pudo guardar en IndexedDB (datos muy grandes), se usará solo en memoria');
+            }
+            toast(`✓ ${msg.total.toLocaleString()} equipos cargados`);
           }
 
           ocultarProgreso();
           mostrarTablaEquipos();
-          toast(`✓ ${msg.total.toLocaleString()} equipos cargados`);
         }
       };
 
