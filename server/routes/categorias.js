@@ -23,6 +23,11 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    // Eliminar fichas ATS de esta categoría primero
+    const catResult = await pool.query('SELECT nombre FROM categorias WHERE id = $1', [req.params.id]);
+    if (catResult.rows[0]) {
+      await pool.query('DELETE FROM ats WHERE categoria = $1', [catResult.rows[0].nombre]);
+    }
     await pool.query('DELETE FROM categorias WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }

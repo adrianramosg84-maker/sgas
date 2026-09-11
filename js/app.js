@@ -153,11 +153,27 @@ async function cargarCategoriasSidebar() {
       div.className = 'sub-item';
       div.href = `#ats/${encodeURIComponent(cat.nombre)}`;
       div.dataset.cat = cat.nombre;
-      div.innerHTML = `
-        <span style="flex:1" onclick="event.preventDefault();navigate('ats/${encodeURIComponent(cat.nombre)}')">${escapeHtml(cat.nombre)}</span>
-        <span style="font-size:11px;opacity:.5;cursor:pointer;padding:0 6px"
-              onclick="event.stopPropagation();event.preventDefault();eliminarCategoria(${cat.id},'${escapeHtml(cat.nombre)}')"
-              title="Eliminar categoría">✕</span>`;
+
+      const spanNombre = document.createElement('span');
+      spanNombre.style.flex = '1';
+      spanNombre.textContent = cat.nombre;
+      spanNombre.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate(`ats/${encodeURIComponent(cat.nombre)}`);
+      });
+
+      const spanDel = document.createElement('span');
+      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
+      spanDel.title = 'Eliminar categoría';
+      spanDel.textContent = '✕';
+      spanDel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        eliminarCategoria(cat.id, cat.nombre);
+      });
+
+      div.appendChild(spanNombre);
+      div.appendChild(spanDel);
       container.appendChild(div);
     });
   } catch(e) {

@@ -191,9 +191,9 @@ function updatePreview() {
    ================================================================ */
 async function guardarConfig() {
   try {
-    for (const [key, value] of Object.entries(currentConfig)) {
-      await Storage.Config.set(key, value);
-    }
+    await Promise.all(
+      Object.entries(currentConfig).map(([key, value]) => Storage.Config.set(key, value))
+    );
     toast('✓ Configuración guardada');
   } catch(e) { toast('Error al guardar configuración', 'error'); }
 }
@@ -207,10 +207,9 @@ async function restaurarConfig() {
   buildFontSelector();
   buildSizeSelector();
   updatePreview();
-  // Guardar defaults en storage
-  for (const [key, value] of Object.entries(currentConfig)) {
-    await Storage.Config.set(key, value);
-  }
+  await Promise.all(
+    Object.entries(currentConfig).map(([key, value]) => Storage.Config.set(key, value))
+  );
   toast('✓ Valores restaurados');
 }
 

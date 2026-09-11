@@ -41,6 +41,7 @@ router.put('/:id', async (req, res) => {
        WHERE id=$6 RETURNING *`,
       [nombre, categoria, estado||'guardado', JSON.stringify(filas||[]), observaciones||'', req.params.id]
     );
+    if (!result.rows[0]) return res.status(404).json({ error: 'No encontrado' });
     res.json(parseAts(result.rows[0]));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

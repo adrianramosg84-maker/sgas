@@ -10,6 +10,8 @@ const Storage = (() => {
   /* ── Configuración ── */
   // Cambiá esta URL por la URL de tu servidor en Render
   const SERVER_URL = 'https://sgas-server.onrender.com';
+  // API Key — debe coincidir con la variable de entorno API_KEY en Render
+  const API_KEY    = 'sgas-2024-clave-segura';
 
   let modoRed = false;
   let db      = null;  // IndexedDB (modo local)
@@ -41,7 +43,11 @@ const Storage = (() => {
   async function apiFetch(path, options = {}) {
     const res = await fetch(`${SERVER_URL}${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        ...(options.headers || {}),
+      },
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
     if (!res.ok) {
@@ -60,7 +66,7 @@ const Storage = (() => {
   function initIndexedDB() {
     return new Promise((resolve, reject) => {
       if (db) { resolve(db); return; }
-      const req = indexedDB.open(DB_NAME, DB_VERSION + 1);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = (e) => {
         const database = e.target.result;
         if (!database.objectStoreNames.contains('ats')) {
