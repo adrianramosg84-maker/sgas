@@ -35,6 +35,9 @@ router.post('/', async (req, res) => {
     const { nombre, columnas, datos } = req.body;
     if (!nombre || !datos) return res.status(400).json({ error: 'nombre y datos requeridos' });
 
+    // Eliminar versiones anteriores antes de insertar la nueva
+    await pool.query('DELETE FROM equipos');
+
     const result = await pool.query(
       `INSERT INTO equipos (nombre, total, columnas, datos)
        VALUES ($1, $2, $3, $4) RETURNING id, nombre, total, columnas, created_at`,

@@ -193,7 +193,8 @@ async function nuevaCategoria() {
         toast('✓ Categoría creada');
         navigate(`ats/${encodeURIComponent(nombre)}`);
       } catch(e) {
-        toast('Error al crear categoría', 'error');
+        const { texto } = Storage.mensajeError(e);
+        toast(`Error al crear categoría: ${texto}`, 'error');
       }
     }
   );
@@ -207,7 +208,8 @@ async function eliminarCategoria(id, nombre) {
     toast('Categoría eliminada');
     navigate('inicio');
   } catch(e) {
-    toast('Error al eliminar', 'error');
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
   }
 }
 

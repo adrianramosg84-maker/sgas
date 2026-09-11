@@ -92,7 +92,10 @@ async function abrirFichaSaved(id) {
     AtsState.fichaActual = ficha;
     AtsState.modo = 'saved';
     renderFicha();
-  } catch(e) { toast('Error al abrir ficha', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al abrir ficha: ${texto}`, 'error');
+  }
 }
 
 async function abrirFichaEdit(id) {
@@ -102,7 +105,10 @@ async function abrirFichaEdit(id) {
     AtsState.fichaActual = ficha;
     AtsState.modo = 'edit';
     renderFicha();
-  } catch(e) { toast('Error al abrir ficha', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al abrir ficha: ${texto}`, 'error');
+  }
 }
 
 /* ================================================================
@@ -221,7 +227,10 @@ async function guardarFicha() {
     AtsState.modo = 'saved';
     renderFicha();
     toast('✓ Ficha guardada correctamente');
-  } catch(e) { toast('Error al guardar', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al guardar: ${texto}`, 'error');
+  }
 }
 
 function editarFicha() {
@@ -235,7 +244,10 @@ async function eliminarFicha(id) {
     await Storage.ATS.remove(id);
     toast('Ficha eliminada');
     renderAtsLista(AtsState.categoria);
-  } catch(e) { toast('Error al eliminar', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
+  }
 }
 
 /* ================================================================

@@ -73,7 +73,10 @@ async function abrirAreaDetalle(id) {
     EmergState.areaActual = area;
     EmergState.modo = 'saved';
     renderAreaDetalle();
-  } catch(e) { toast('Error al abrir área', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al abrir área: ${texto}`, 'error');
+  }
 }
 
 async function abrirAreaEdit(id) {
@@ -83,7 +86,10 @@ async function abrirAreaEdit(id) {
     EmergState.areaActual = area;
     EmergState.modo = 'edit';
     renderAreaDetalle();
-  } catch(e) { toast('Error al abrir área', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al abrir área: ${texto}`, 'error');
+  }
 }
 
 function renderAreaDetalle() {
@@ -192,7 +198,10 @@ async function guardarArea() {
     EmergState.modo = 'saved';
     renderAreaDetalle();
     toast('✓ Área guardada correctamente');
-  } catch(e) { toast('Error al guardar', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al guardar: ${texto}`, 'error');
+  }
 }
 
 function editarArea() {
@@ -226,7 +235,10 @@ async function eliminarArea(id) {
     await Storage.Emergencias.remove(id);
     toast('Área eliminada');
     renderEmergLista();
-  } catch(e) { toast('Error al eliminar', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
+  }
 }
 
 /* ================================================================

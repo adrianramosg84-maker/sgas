@@ -76,7 +76,8 @@ function cargarDocumento() {
           toast('✓ Documento cargado');
           renderDocumentos();
         } catch(e) {
-          toast('Error al cargar el documento', 'error');
+          const { texto } = Storage.mensajeError(e);
+          toast(`Error al cargar: ${texto}`, 'error');
         }
       }
     );
@@ -104,7 +105,6 @@ function fileToBase64(file) {
    ================================================================ */
 async function abrirDocumento(doc) {
   try {
-    // En modo RED el listado no trae base64, hay que pedirlo por ID
     let base64 = doc.base64;
     if (!base64 && doc.id) {
       toast('Cargando documento...');
@@ -113,7 +113,6 @@ async function abrirDocumento(doc) {
     }
     if (!base64) { toast('Documento no disponible', 'error'); return; }
 
-    // Convertir base64 a Blob y abrir en nueva pestaña
     const byteString  = atob(base64.split(',')[1] || base64);
     const ab          = new ArrayBuffer(byteString.length);
     const ia          = new Uint8Array(ab);
@@ -124,7 +123,8 @@ async function abrirDocumento(doc) {
     if (!win) toast('Permitir popups para abrir documentos', 'error');
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   } catch(e) {
-    toast('Error al abrir el documento', 'error');
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al abrir documento: ${texto}`, 'error');
   }
 }
 
@@ -137,7 +137,10 @@ async function eliminarDocumento(id) {
     await Storage.Documentos.remove(id);
     toast('Documento eliminado');
     renderDocumentos();
-  } catch(e) { toast('Error al eliminar', 'error'); }
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
+  }
 }
 
 /* ── Registrar en el router ── */

@@ -41,20 +41,40 @@ const Storage = (() => {
      FETCH HELPER (modo red)
      ================================================================ */
   async function apiFetch(path, options = {}) {
-    const res = await fetch(`${SERVER_URL}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        ...(options.headers || {}),
-      },
-      body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(`${SERVER_URL}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          ...(options.headers || {}),
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+      });
+    } catch(e) {
+      // Error de red: sin conexión, timeout, servidor caído
+      throw new Error('RED: No se pudo conectar con el servidor. Verificá tu conexión.');
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || res.statusText);
+      if (res.status === 401) throw new Error('AUTH: Sin autorización para realizar esta acción.');
+      if (res.status === 404) throw new Error('NOTFOUND: El registro no fue encontrado.');
+      if (res.status === 400) throw new Error(`VALIDACION: ${err.error || 'Datos inválidos.'}`);
+      throw new Error(`SERVER: Error del servidor (${res.status}): ${err.error || res.statusText}`);
     }
     return res.json();
+  }
+
+  /* ── Clasificar mensaje de error para mostrar al usuario ── */
+  function mensajeError(e) {
+    const msg = e?.message || '';
+    if (msg.startsWith('RED:'))        return { texto: 'Sin conexión con el servidor. Verificá tu red.', tipo: 'red' };
+    if (msg.startsWith('AUTH:'))       return { texto: 'Sin autorización. Recargá la página.', tipo: 'auth' };
+    if (msg.startsWith('NOTFOUND:'))   return { texto: 'El registro no existe o fue eliminado.', tipo: 'notfound' };
+    if (msg.startsWith('VALIDACION:')) return { texto: msg.replace('VALIDACION: ', ''), tipo: 'validacion' };
+    if (msg.startsWith('SERVER:'))     return { texto: 'Error en el servidor. Intentá de nuevo en unos segundos.', tipo: 'server' };
+    return { texto: 'Ocurrió un error inesperado. Intentá de nuevo.', tipo: 'desconocido' };
   }
 
   /* ================================================================
@@ -309,6 +329,6 @@ const Storage = (() => {
     },
   };
 
-  return { init, getModo, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
+  return { init, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
 
 })();
