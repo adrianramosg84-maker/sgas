@@ -347,8 +347,8 @@ async function exportarPdfAts(id) {
       3: { cellWidth: 97 },
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    rowPageBreak: 'avoid',
-    showHead: 'everyPage',
+    rowPageBreak: 'auto',
+    showHead: 'firstPage',
     margin: { top: 12, left: 6, right: 6, bottom: 10 },
     didDrawPage: (data) => {
       const pg = doc.internal.getCurrentPageInfo().pageNumber;
