@@ -338,11 +338,8 @@ async function exportarPdfAts(id) {
       halign: 'left',
       cellPadding: { top: 2, right: 2.5, bottom: 2, left: 2.5 },
     },
-    columnStyles: {
-      0: { cellWidth: 77 },
-      1: { cellWidth: 97 },
-      2: { cellWidth: 97 },
-    },
+    columnStyles: {},
+    tableWidth: 'auto',
     alternateRowStyles: { fillColor: [248, 250, 252] },
     rowPageBreak: 'auto',
     showHead: 'firstPage',
