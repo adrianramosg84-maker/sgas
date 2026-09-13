@@ -282,28 +282,28 @@ async function exportarPdfAts(id) {
   // Encabezado página 1
   const dibujarHeader = (pg) => {
     doc.setFillColor(45, 74, 110);
-    doc.rect(0, 0, pageW, pg === 1 ? 16 : 10, 'F');
+    doc.rect(0, 0, pageW, pg === 1 ? 14 : 9, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(pg === 1 ? 11 : 8);
-    doc.text('SGAS', 8, pg === 1 ? 10 : 7);
-    doc.setFontSize(pg === 1 ? 9 : 7.5);
-    doc.text('ANÁLISIS DE TRABAJO SEGURO (ATS)', pageW / 2, pg === 1 ? 10 : 7, { align: 'center' });
-    doc.setFontSize(7.5);
+    doc.setFontSize(pg === 1 ? 10 : 7.5);
+    doc.text('SGAS', 6, pg === 1 ? 9 : 6);
+    doc.setFontSize(pg === 1 ? 8.5 : 7);
+    doc.text('ANÁLISIS DE TRABAJO SEGURO (ATS)', pageW / 2, pg === 1 ? 9 : 6, { align: 'center' });
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(fechaHoy, pageW - 8, pg === 1 ? 10 : 7, { align: 'right' });
+    doc.text(fechaHoy, pageW - 6, pg === 1 ? 9 : 6, { align: 'right' });
   };
 
   dibujarHeader(1);
 
   // Subtítulo
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Categoría: ${ficha.categoria}`, 10, 23);
+  doc.text(`Categoría: ${ficha.categoria}`, 6, 19);
   doc.setFont('helvetica', 'bold');
-  const nombreLines = doc.splitTextToSize(`Tarea: ${ficha.nombre}`, pageW - 20);
-  doc.text(nombreLines, 10, 28);
+  const nombreLines = doc.splitTextToSize(`Tarea: ${ficha.nombre}`, pageW - 12);
+  doc.text(nombreLines, 6, 24);
 
   // Tabla con autoTable
   const body = (ficha.filas || []).map((f, i) => [
@@ -314,7 +314,7 @@ async function exportarPdfAts(id) {
   ]);
 
   doc.autoTable({
-    startY: 33,
+    startY: 29,
     head: [[
       '#',
       'PASOS DE LA TAREA\nDescribe los pasos a seguir para ejecutar la actividad',
@@ -323,11 +323,11 @@ async function exportarPdfAts(id) {
     ]],
     body,
     styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 2.5, right: 4, bottom: 2.5, left: 4 },
+      fontSize: 6.5,
+      cellPadding: { top: 1.5, right: 2.5, bottom: 1.5, left: 2.5 },
       valign: 'top',
       lineColor: [180, 180, 180],
-      lineWidth: 0.3,
+      lineWidth: 0.2,
       overflow: 'linebreak',
       font: 'helvetica',
     },
@@ -335,46 +335,47 @@ async function exportarPdfAts(id) {
       fillColor: [45, 74, 110],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.5,
+      fontSize: 6.5,
       valign: 'middle',
       halign: 'left',
+      cellPadding: { top: 2, right: 2.5, bottom: 2, left: 2.5 },
     },
     columnStyles: {
-      0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold' },
-      1: { cellWidth: 72 },
-      2: { cellWidth: 95 },
-      3: { cellWidth: 95 },
+      0: { cellWidth: 7,  halign: 'center', fontStyle: 'bold' },
+      1: { cellWidth: 70 },
+      2: { cellWidth: 97 },
+      3: { cellWidth: 97 },
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     rowPageBreak: 'avoid',
     showHead: 'everyPage',
-    margin: { top: 14, left: 8, right: 8, bottom: 12 },
+    margin: { top: 12, left: 6, right: 6, bottom: 10 },
     didDrawPage: (data) => {
       const pg = doc.internal.getCurrentPageInfo().pageNumber;
       if (pg > 1) dibujarHeader(pg);
       // Pie
       doc.setTextColor(120, 120, 120);
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${ficha.categoria} — ${ficha.nombre}`, 8, pageH - 4);
-      doc.text(`Página ${pg}`, pageW / 2, pageH - 4, { align: 'center' });
+      doc.text(`${ficha.categoria} — ${ficha.nombre}`, 6, pageH - 3.5);
+      doc.text(`Página ${pg}`, pageW / 2, pageH - 3.5, { align: 'center' });
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(45, 106, 79);
-      doc.text('ESTADO: APROBADO', pageW - 8, pageH - 4, { align: 'right' });
+      doc.text('ESTADO: APROBADO', pageW - 6, pageH - 3.5, { align: 'right' });
     },
   });
 
   // Observaciones
   if (ficha.observaciones) {
-    const finalY = (doc.lastAutoTable?.finalY || 33) + 5;
+    const finalY = (doc.lastAutoTable?.finalY || 29) + 4;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setTextColor(0, 0, 0);
-    doc.text('Observaciones / Recomendaciones:', 8, finalY);
+    doc.text('Observaciones / Recomendaciones:', 6, finalY);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    const lines = doc.splitTextToSize(ficha.observaciones, pageW - 16);
-    doc.text(lines, 8, finalY + 4.5);
+    doc.setFontSize(6.5);
+    const lines = doc.splitTextToSize(ficha.observaciones, pageW - 12);
+    doc.text(lines, 6, finalY + 4);
   }
 
   doc.save(nombreArchivo);
