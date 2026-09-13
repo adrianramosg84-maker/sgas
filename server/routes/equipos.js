@@ -31,20 +31,26 @@ router.get('/:id', async (req, res) => {
 
 /* ── POST — guardar/reemplazar dataset de equipos ── */
 router.post('/', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { nombre, columnas, datos } = req.body;
     if (!nombre || !datos) return res.status(400).json({ error: 'nombre y datos requeridos' });
 
-    // Eliminar versiones anteriores antes de insertar la nueva
-    await pool.query('DELETE FROM equipos');
-
-    const result = await pool.query(
+    await client.query('BEGIN');
+    await client.query('DELETE FROM equipos');
+    const result = await client.query(
       `INSERT INTO equipos (nombre, total, columnas, datos)
        VALUES ($1, $2, $3, $4) RETURNING id, nombre, total, columnas, created_at`,
       [nombre, datos.length, JSON.stringify(columnas || []), JSON.stringify(datos)]
     );
+    await client.query('COMMIT');
     res.status(201).json(result.rows[0]);
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
 });
 
 /* ── DELETE /:id — eliminar dataset ── */

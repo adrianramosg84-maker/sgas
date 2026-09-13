@@ -22,15 +22,22 @@ router.post('/', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
-    // Eliminar fichas ATS de esta categoría primero
-    const catResult = await pool.query('SELECT nombre FROM categorias WHERE id = $1', [req.params.id]);
+    await client.query('BEGIN');
+    const catResult = await client.query('SELECT nombre FROM categorias WHERE id = $1', [req.params.id]);
     if (catResult.rows[0]) {
-      await pool.query('DELETE FROM ats WHERE categoria = $1', [catResult.rows[0].nombre]);
+      await client.query('DELETE FROM ats WHERE categoria = $1', [catResult.rows[0].nombre]);
     }
-    await pool.query('DELETE FROM categorias WHERE id = $1', [req.params.id]);
+    await client.query('DELETE FROM categorias WHERE id = $1', [req.params.id]);
+    await client.query('COMMIT');
     res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;

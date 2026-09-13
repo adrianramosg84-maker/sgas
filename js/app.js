@@ -213,6 +213,22 @@ async function eliminarCategoria(id, nombre) {
   }
 }
 
+/* ── Reconectar al servidor ── */
+async function intentarReconectar() {
+  const btn = document.querySelector('.conn-retry');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Conectando...'; }
+  const ok = await Storage.reconectar();
+  if (ok) {
+    toast('✓ Conectado al servidor. Recargando datos...');
+    await cargarCategoriasSidebar();
+    route(location.hash.slice(1) || 'inicio');
+  } else {
+    toast('No se pudo conectar. Intentá en 30 segundos.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Reintentar'; }
+  }
+}
+window.intentarReconectar = intentarReconectar;
+
 /* ── Init ── */
 async function init() {
   try { await Storage.init(); } catch(e) { console.error('Storage:', e); }

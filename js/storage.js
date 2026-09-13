@@ -20,19 +20,60 @@ const Storage = (() => {
      DETECCIÓN AUTOMÁTICA DE MODO
      ================================================================ */
   async function init() {
+    mostrarEstadoConexion('conectando');
     try {
-      const res = await fetch(`${SERVER_URL}/api/ping`, { signal: AbortSignal.timeout(4000) });
+      // Timeout de 60s para dar tiempo al servidor a despertar en Render free tier
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 60000);
+      const res = await fetch(`${SERVER_URL}/api/ping`, { signal: controller.signal });
+      clearTimeout(timer);
       if (res.ok) {
         modoRed = true;
+        mostrarEstadoConexion('red');
         console.log('SGAS: Modo RED activo →', SERVER_URL);
         return;
       }
     } catch(e) {
-      // Servidor no disponible, usar local
+      // Servidor no disponible o timeout — usar local
     }
-    // Inicializar IndexedDB local
     await initIndexedDB();
+    mostrarEstadoConexion('local');
     console.log('SGAS: Modo LOCAL activo (IndexedDB)');
+  }
+
+  async function reconectar() {
+    mostrarEstadoConexion('conectando');
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 60000);
+      const res = await fetch(`${SERVER_URL}/api/ping`, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        modoRed = true;
+        mostrarEstadoConexion('red');
+        console.log('SGAS: Reconectado → Modo RED');
+        return true;
+      }
+    } catch(e) {}
+    mostrarEstadoConexion('local');
+    return false;
+  }
+
+  function mostrarEstadoConexion(estado) {
+    const el = document.getElementById('conn-status');
+    if (!el) return;
+    if (estado === 'conectando') {
+      el.innerHTML = `<span class="conn-dot conn-waiting"></span> Conectando al servidor...`;
+      el.style.display = 'flex';
+    } else if (estado === 'red') {
+      el.innerHTML = `<span class="conn-dot conn-ok"></span> En línea`;
+      el.style.display = 'flex';
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
+    } else if (estado === 'local') {
+      el.innerHTML = `<span class="conn-dot conn-off"></span> Sin servidor — datos locales &nbsp;
+        <button onclick="intentarReconectar()" class="conn-retry">🔄 Reconectar</button>`;
+      el.style.display = 'flex';
+    }
   }
 
   function getModo() { return modoRed ? 'red' : 'local'; }
@@ -329,6 +370,6 @@ const Storage = (() => {
     },
   };
 
-  return { init, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
+  return { init, reconectar, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
 
 })();

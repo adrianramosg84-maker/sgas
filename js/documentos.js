@@ -57,6 +57,12 @@ function cargarDocumento() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validar tamaño antes de procesar (límite 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast('El archivo supera el límite de 20MB. Usá un PDF más liviano.', 'error');
+      return;
+    }
+
     // Pedir nombre personalizado via modal
     const nombreSugerido = file.name.replace(/\.pdf$/i, '');
     openModal(

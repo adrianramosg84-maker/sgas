@@ -168,9 +168,10 @@ function renderTablaAts(filas, editable) {
    ================================================================ */
 function agregarFila() {
   if (!AtsState.fichaActual) return;
-  AtsState.fichaActual.filas = AtsState.fichaActual.filas || [];
-  const i = AtsState.fichaActual.filas.length;
+  // Sincronizar DOM → array ANTES de agregar, para no perder lo que el usuario escribió
+  AtsState.fichaActual.filas = leerFilasDOM();
   AtsState.fichaActual.filas.push({ paso: '', peligro: '', control: '' });
+  const i = AtsState.fichaActual.filas.length - 1;
   const tbody = document.getElementById('ats-tbody');
   const tr = document.createElement('tr');
   tr.dataset.index = i;
@@ -186,6 +187,8 @@ function agregarFila() {
 
 function eliminarFila(index) {
   if (!AtsState.fichaActual?.filas) return;
+  // Sincronizar DOM → array ANTES de eliminar, para no perder lo que el usuario escribió
+  AtsState.fichaActual.filas = leerFilasDOM();
   AtsState.fichaActual.filas.splice(index, 1);
   renderTablaAts(AtsState.fichaActual.filas, true);
 }
