@@ -306,8 +306,7 @@ async function exportarPdfAts(id) {
   doc.text(nombreLines, 6, 24);
 
   // Tabla con autoTable
-  const body = (ficha.filas || []).map((f, i) => [
-    i + 1,
+  const body = (ficha.filas || []).map((f) => [
     textoAPdf(f.paso),
     textoAPdf(f.peligro),
     textoAPdf(f.control),
@@ -316,7 +315,6 @@ async function exportarPdfAts(id) {
   doc.autoTable({
     startY: 29,
     head: [[
-      '#',
       'PASOS DE LA TAREA\nDescribe los pasos a seguir para ejecutar la actividad',
       'PELIGROS IDENTIFICADOS\nDetalla los peligros asociados a cada paso',
       'MEDIDAS DE CONTROL\nEspecifique acciones a tomar para prevenir o mitigar cada riesgo',
@@ -341,10 +339,9 @@ async function exportarPdfAts(id) {
       cellPadding: { top: 2, right: 2.5, bottom: 2, left: 2.5 },
     },
     columnStyles: {
-      0: { cellWidth: 7,  halign: 'center', fontStyle: 'bold' },
-      1: { cellWidth: 70 },
+      0: { cellWidth: 77 },
+      1: { cellWidth: 97 },
       2: { cellWidth: 97 },
-      3: { cellWidth: 97 },
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     rowPageBreak: 'auto',
