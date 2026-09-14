@@ -400,13 +400,135 @@ const spinStyle = document.createElement('style');
 spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
 document.head.appendChild(spinStyle);
 
+/* ================================================================
+   CARGAR DESDE GOOGLE DRIVE
+   ================================================================ */
+function mostrarInputDrive() {
+  const wrap = document.getElementById('drive-input-wrap');
+  if (wrap) wrap.style.display = 'block';
+  setTimeout(() => document.getElementById('drive-url-input')?.focus(), 100);
+}
+
+function ocultarInputDrive() {
+  const wrap = document.getElementById('drive-input-wrap');
+  if (wrap) wrap.style.display = 'none';
+  const input = document.getElementById('drive-url-input');
+  if (input) input.value = '';
+}
+
+function extraerIdDrive(url) {
+  // Formatos de URL de Drive:
+  // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+  // https://drive.google.com/open?id=FILE_ID
+  // https://docs.google.com/spreadsheets/d/FILE_ID/edit
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+    /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+async function cargarDesdeGoogleDrive() {
+  const input = document.getElementById('drive-url-input');
+  const url   = input?.value?.trim();
+  if (!url) { toast('Pegá el link de Google Drive primero', 'error'); return; }
+
+  const fileId = extraerIdDrive(url);
+  if (!fileId) {
+    toast('Link de Drive no válido. Asegurate de copiar el link completo.', 'error');
+    return;
+  }
+
+  ocultarInputDrive();
+  mostrarProgreso('Descargando desde Google Drive...');
+
+  // URL de descarga directa de Drive
+  const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+  try {
+    const res = await fetch(downloadUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const contentType = res.headers.get('content-type') || '';
+    // Drive a veces devuelve una página HTML de confirmación para archivos grandes
+    if (contentType.includes('text/html')) {
+      ocultarProgreso();
+      toast('El archivo es muy grande para descarga directa. Intentá con un archivo más pequeño o exportalo como .csv desde Drive.', 'error');
+      return;
+    }
+
+    mostrarProgreso('Procesando archivo...');
+    const buffer = await res.arrayBuffer();
+
+    // Procesar con Web Worker igual que el flujo normal
+    const worker = new Worker('js/equipos-worker.js');
+    const nombreArchivo = `Drive_${new Date().toLocaleDateString('es-AR').replace(/\//g,'-')}`;
+
+    worker.onmessage = async (ev) => {
+      const msg = ev.data;
+      if (msg.tipo === 'progreso') { mostrarProgreso(msg.msg); return; }
+      if (msg.tipo === 'error') {
+        ocultarProgreso();
+        toast(msg.msg || 'Error al procesar el archivo', 'error');
+        worker.terminate();
+        return;
+      }
+      if (msg.tipo === 'ok') {
+        worker.terminate();
+        EquiposState.columnas    = msg.columnas;
+        EquiposState.datos       = msg.datos;
+        EquiposState.filtrados   = msg.datos;
+        EquiposState.pagina      = 1;
+        EquiposState.busqueda    = '';
+        EquiposState.filtrosCols = {};
+        const search = document.getElementById('equipos-search');
+        if (search) search.value = '';
+        mostrarProgreso('Guardando en caché...');
+        if (Storage.getModo() === 'red') {
+          try {
+            await Storage.Equipos.save({ nombre: nombreArchivo, columnas: EquiposState.columnas, datos: EquiposState.datos });
+            toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive y sincronizados`);
+          } catch(e) {
+            toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive (solo local)`);
+          }
+        } else {
+          try { await idbSaveEquipos({ columnas: EquiposState.columnas, datos: EquiposState.datos }); } catch(e) {}
+          toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive`);
+        }
+        ocultarProgreso();
+        mostrarTablaEquipos();
+      }
+    };
+
+    worker.onerror = () => {
+      ocultarProgreso();
+      procesarExcelDirecto(buffer, nombreArchivo);
+      worker.terminate();
+    };
+
+    worker.postMessage({ buffer }, [buffer]);
+
+  } catch(e) {
+    ocultarProgreso();
+    toast('No se pudo descargar el archivo. Verificá que el link sea público.', 'error');
+  }
+}
+
 /* ── Registrar vista ── */
 Views.equipos = () => renderEquipos();
 
 /* ── Exponer globalmente ── */
-window.renderEquipos      = renderEquipos;
-window.cargarExcelEquipos = cargarExcelEquipos;
-window.buscarEquipos      = buscarEquipos;
-window.filtrarColumna     = filtrarColumna;
-window.limpiarFiltros     = limpiarFiltros;
-window.irPagina           = irPagina;
+window.renderEquipos         = renderEquipos;
+window.cargarExcelEquipos    = cargarExcelEquipos;
+window.buscarEquipos         = buscarEquipos;
+window.filtrarColumna        = filtrarColumna;
+window.limpiarFiltros        = limpiarFiltros;
+window.irPagina              = irPagina;
+window.mostrarInputDrive     = mostrarInputDrive;
+window.ocultarInputDrive     = ocultarInputDrive;
+window.cargarDesdeGoogleDrive = cargarDesdeGoogleDrive;

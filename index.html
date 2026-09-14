@@ -327,8 +327,23 @@
                    style="width:280px"
                    oninput="buscarEquipos(this.value)" id="equipos-search" />
             <button class="btn btn-ghost" onclick="limpiarFiltros()">✕ Limpiar</button>
+            <button class="btn btn-ghost" id="btn-cargar-drive"
+                    onclick="mostrarInputDrive()">🔗 Desde Drive</button>
             <button class="btn btn-primary" id="btn-cargar-excel"
                     onclick="cargarExcelEquipos()">📂 Cargar Excel</button>
+          </div>
+          <!-- Input Drive (oculto por defecto) -->
+          <div id="drive-input-wrap" style="display:none;margin-bottom:12px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="drive-url-input" type="text"
+                placeholder="Pegá el link de Google Drive del archivo Excel..."
+                style="flex:1;min-width:260px;font-size:13px" />
+              <button class="btn btn-primary" onclick="cargarDesdeGoogleDrive()">⬇️ Cargar</button>
+              <button class="btn btn-ghost" onclick="ocultarInputDrive()">✕</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:5px">
+              El archivo debe estar compartido como "Cualquier persona con el link puede ver"
+            </div>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
