@@ -31,7 +31,6 @@ const ROUTES = {
   'semanales':            () => Views.genericoLista('semanales',            'ATS Semanales'),
   'rescatista':           () => Views.genericoLista('rescatista',           'Rescatista'),
   'actividades-criticas': () => Views.genericoLista('actividades-criticas', 'Actividades Críticas'),
-  'parada-planta':        () => Views.genericoLista('parada-planta',        'ATS Parada de Planta'),
 };
 
 /* ── Router ── */
@@ -43,7 +42,12 @@ function route(hash) {
   }
   if (hash.startsWith('ats/') && !hash.startsWith('ats/ficha')) {
     const cat = decodeURIComponent(hash.slice(4));
-    Views.atsLista(cat);
+    Views.atsLista(cat, 'ats');
+    return;
+  }
+  if (hash.startsWith('parada/')) {
+    const cat = decodeURIComponent(hash.slice(7));
+    Views.atsLista(cat, 'parada');
     return;
   }
   if (hash.startsWith('ats/ficha')) return;
@@ -240,6 +244,7 @@ async function init() {
 
   // Cargar categorías dinámicas en sidebar
   await cargarCategoriasSidebar();
+  await cargarCategoriasParada();
 
   // Abrir submenú ATS por defecto
   const subATS = document.getElementById('subATS');
@@ -255,6 +260,92 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-window.nuevaCategoria      = nuevaCategoria;
-window.eliminarCategoria   = eliminarCategoria;
+window.nuevaCategoria          = nuevaCategoria;
+window.eliminarCategoria       = eliminarCategoria;
 window.cargarCategoriasSidebar = cargarCategoriasSidebar;
+
+/* ================================================================
+   CATEGORÍAS PARADA DE PLANTA
+   ================================================================ */
+async function cargarCategoriasParada() {
+  const container = document.getElementById('sub-parada-categorias');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:var(--text-dim)">Cargando...</div>';
+
+  try {
+    const cats = await Storage.Categorias.getAll('parada');
+    container.innerHTML = '';
+
+    if (cats.length === 0) {
+      container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:var(--text-dim)">Sin categorías aún</div>';
+      return;
+    }
+
+    cats.forEach(cat => {
+      const div = document.createElement('a');
+      div.className = 'sub-item';
+      div.href = `#parada/${encodeURIComponent(cat.nombre)}`;
+      div.dataset.cat = cat.nombre;
+
+      const spanNombre = document.createElement('span');
+      spanNombre.style.flex = '1';
+      spanNombre.textContent = cat.nombre;
+      spanNombre.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate(`parada/${encodeURIComponent(cat.nombre)}`);
+      });
+
+      const spanDel = document.createElement('span');
+      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
+      spanDel.title = 'Eliminar categoría';
+      spanDel.textContent = '✕';
+      spanDel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        eliminarCategoriaParada(cat.id, cat.nombre);
+      });
+
+      div.appendChild(spanNombre);
+      div.appendChild(spanDel);
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:#f87171">Error al cargar</div>';
+  }
+}
+
+async function nuevaCategoriaParada() {
+  openModal(
+    'Nueva Categoría — Parada de Planta',
+    'Nombre de la categoría',
+    'Ej: Área Calderas, Línea 3...',
+    async (nombre) => {
+      try {
+        await Storage.Categorias.save({ nombre, tipo: 'parada' });
+        await cargarCategoriasParada();
+        toast('✓ Categoría creada');
+        navigate(`parada/${encodeURIComponent(nombre)}`);
+      } catch(e) {
+        const { texto } = Storage.mensajeError(e);
+        toast(`Error al crear categoría: ${texto}`, 'error');
+      }
+    }
+  );
+}
+
+async function eliminarCategoriaParada(id, nombre) {
+  if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSe eliminarán también todas sus fichas ATS.`)) return;
+  try {
+    await Storage.Categorias.remove(id);
+    await cargarCategoriasParada();
+    toast('Categoría eliminada');
+    navigate('inicio');
+  } catch(e) {
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
+  }
+}
+
+window.nuevaCategoriaParada    = nuevaCategoriaParada;
+window.eliminarCategoriaParada = eliminarCategoriaParada;
+window.cargarCategoriasParada  = cargarCategoriasParada;

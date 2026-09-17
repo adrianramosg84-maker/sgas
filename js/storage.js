@@ -196,38 +196,40 @@ const Storage = (() => {
      API PÚBLICA — ATS
      ================================================================ */
   const ATS = {
-    getAll: async () => {
+    getAll: async (tipo = 'ats') => {
       if (modoRed) {
-        // Traer todas las fichas paginando automáticamente
         let page = 1, all = [];
         while (true) {
-          const resp = await apiFetch(`/api/ats?page=${page}&limit=50`);
+          const resp = await apiFetch(`/api/ats?page=${page}&limit=50&tipo=${tipo}`);
           all = all.concat(resp.data);
-          if (page >= resp.pages) break;
+          if (page >= resp.pages || page >= 100) break;
           page++;
         }
         return all;
       }
-      return idbGetAll('ats');
+      const rows = await idbGetAll('ats');
+      return rows.filter(r => (r.tipo || 'ats') === tipo);
     },
-    getByCategoria: async (cat) => {
+    getByCategoria: async (cat, tipo = 'ats') => {
       if (modoRed) {
         let page = 1, all = [];
         while (true) {
-          const resp = await apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}&page=${page}&limit=50`);
+          const resp = await apiFetch(`/api/ats?categoria=${encodeURIComponent(cat)}&tipo=${tipo}&page=${page}&limit=50`);
           all = all.concat(resp.data);
-          if (page >= resp.pages) break;
+          if (page >= resp.pages || page >= 100) break;
           page++;
         }
         return all;
       }
-      return idbGetByIndex('ats', 'categoria', cat);
+      const rows = await idbGetByIndex('ats', 'categoria', cat);
+      return rows.filter(r => (r.tipo || 'ats') === tipo);
     },
     getById: async (id) => {
       if (modoRed) return apiFetch(`/api/ats/${id}`);
       return idbGet('ats', id);
     },
     save: async (record) => {
+      if (!record.tipo) record.tipo = 'ats';
       if (modoRed) {
         if (record.id) {
           const r = await apiFetch(`/api/ats/${record.id}`, { method: 'PUT', body: record });
@@ -328,11 +330,13 @@ const Storage = (() => {
      API PÚBLICA — CATEGORÍAS
      ================================================================ */
   const Categorias = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/categorias');
-      return idbGetAll('categorias');
+    getAll: async (tipo = 'ats') => {
+      if (modoRed) return apiFetch(`/api/categorias?tipo=${tipo}`);
+      const rows = await idbGetAll('categorias');
+      return rows.filter(r => (r.tipo || 'ats') === tipo);
     },
     save: async (record) => {
+      if (!record.tipo) record.tipo = 'ats';
       if (modoRed) {
         if (record.id) {
           return apiFetch(`/api/categorias/${record.id}`, { method: 'PUT', body: record });

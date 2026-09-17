@@ -6,6 +6,7 @@
 
 const AtsState = {
   categoria: '',
+  tipo:      'ats',
   fichaActual: null,
   modo: 'edit',
 };
@@ -13,11 +14,15 @@ const AtsState = {
 /* ================================================================
    LISTA DE FICHAS
    ================================================================ */
-async function renderAtsLista(categoria) {
+async function renderAtsLista(categoria, tipo = 'ats') {
   AtsState.categoria = categoria;
+  AtsState.tipo      = tipo;
+
+  const prefijo = tipo === 'parada' ? 'parada' : 'ats';
 
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
+    { label: tipo === 'parada' ? 'Parada de Planta' : categoria, hash: tipo === 'parada' ? null : null },
     { label: categoria },
   ]);
 
@@ -28,9 +33,9 @@ async function renderAtsLista(categoria) {
     openModal('Nueva Ficha ATS', 'Nombre del ATS',
       'Ej: Trabajos en caliente — Caldera 3', crearNuevaFicha);
 
-  // Cargar fichas
+  // Cargar fichas filtradas por categoria Y tipo
   let fichas = [];
-  try { fichas = await Storage.ATS.getByCategoria(categoria); } catch(e) {}
+  try { fichas = await Storage.ATS.getByCategoria(categoria, AtsState.tipo); } catch(e) {}
 
   const tbody = document.getElementById('ats-lista-tbody');
   tbody.innerHTML = '';
@@ -72,14 +77,16 @@ async function renderAtsLista(categoria) {
 async function crearNuevaFicha(nombre) {
   AtsState.fichaActual = {
     nombre,
-    categoria: AtsState.categoria,
-    estado: 'borrador',
-    filas: [
+    categoria:   AtsState.categoria,
+    tipo:        AtsState.tipo || 'ats',
+    estado:      'borrador',
+    filas:       [
       { paso: '', peligro: '', control: '' },
       { paso: '', peligro: '', control: '' },
       { paso: '', peligro: '', control: '' },
     ],
     observaciones: '',
+    emergencia:  {},
   };
   AtsState.modo = 'edit';
   renderFicha();
@@ -397,10 +404,11 @@ async function exportarPdfAts(id) {
 }
 
 /* ── Registrar vistas en el router ── */
-Views.atsLista = (cat) => renderAtsLista(cat);
+Views.atsLista = (cat, tipo) => renderAtsLista(cat, tipo || 'ats');
 Views.genericoLista = (slug, label) => {
   AtsState.categoria = label;
-  renderAtsLista(label);
+  AtsState.tipo      = 'ats';
+  renderAtsLista(label, 'ats');
 };
 
 /* ── Exponer globalmente ── */

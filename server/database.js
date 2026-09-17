@@ -66,6 +66,22 @@ async function init() {
     CREATE INDEX IF NOT EXISTS idx_ats_categoria  ON ats(categoria);
     CREATE INDEX IF NOT EXISTS idx_ats_updated_at ON ats(updated_at DESC);
 
+    -- Agregar columna tipo si no existe (sin tocar datos existentes)
+    ALTER TABLE ats ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'ats';
+    ALTER TABLE categorias ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'ats';
+    ALTER TABLE ats ADD COLUMN IF NOT EXISTS emergencia TEXT NOT NULL DEFAULT '{}';
+
+    CREATE INDEX IF NOT EXISTS idx_ats_tipo ON ats(tipo);
+
+    -- Constraint única por nombre+tipo en categorías (para upsert correcto)
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'categorias_nombre_tipo_key'
+      ) THEN
+        ALTER TABLE categorias ADD CONSTRAINT categorias_nombre_tipo_key UNIQUE (nombre, tipo);
+      END IF;
+    END $$;
+
     CREATE TABLE IF NOT EXISTS sheets (
       id          SERIAL PRIMARY KEY,
       nombre      TEXT    NOT NULL,

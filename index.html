@@ -86,13 +86,20 @@
       <span class="nav-label">Actividades Críticas</span>
     </a>
 
-    <a href="#parada-planta" class="nav-item" data-nav="parada-planta"
-       onclick="event.preventDefault();navigate('parada-planta')">
+    <!-- ATS Parada de Planta (con submenú dinámico propio) -->
+    <div class="nav-item" data-toggle="subParada"
+         onclick="toggleSub('subParada', this)">
       <span class="icon">🏭</span>
       <span class="nav-label">ATS Parada de Planta</span>
-    </a>
-
-    <hr class="sep">
+      <span class="nav-arrow">›</span>
+    </div>
+    <div class="submenu" id="subParada">
+      <div id="sub-parada-categorias"></div>
+      <div class="sub-item" onclick="nuevaCategoriaParada()"
+           style="color:var(--accent);margin-top:4px">
+        ＋ Nueva Categoría
+      </div>
+    </div>
 
     <a href="#planos" class="nav-item" data-nav="planos"
        onclick="event.preventDefault();navigate('planos')">
