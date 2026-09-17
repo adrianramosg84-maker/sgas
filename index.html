@@ -50,11 +50,26 @@
       <span class="nav-label">ATS</span>
       <span class="nav-arrow">›</span>
     </div>
-    <div class="submenu open" id="subATS">
+    <div class="submenu" id="subATS">
       <!-- Categorías cargadas dinámicamente -->
       <div id="sub-ats-categorias"></div>
       <!-- Botón agregar categoría -->
       <div class="sub-item" onclick="nuevaCategoria()"
+           style="color:var(--accent);margin-top:4px">
+        ＋ Nueva Categoría
+      </div>
+    </div>
+
+    <!-- ATS Parada de Planta (con submenú dinámico propio) -->
+    <div class="nav-item" data-toggle="subParada"
+         onclick="toggleSub('subParada', this)">
+      <span class="icon">🏭</span>
+      <span class="nav-label">ATS Parada de Planta</span>
+      <span class="nav-arrow">›</span>
+    </div>
+    <div class="submenu" id="subParada">
+      <div id="sub-parada-categorias"></div>
+      <div class="sub-item" onclick="nuevaCategoriaParada()"
            style="color:var(--accent);margin-top:4px">
         ＋ Nueva Categoría
       </div>
@@ -85,21 +100,6 @@
       <span class="icon">⚠️</span>
       <span class="nav-label">Actividades Críticas</span>
     </a>
-
-    <!-- ATS Parada de Planta (con submenú dinámico propio) -->
-    <div class="nav-item" data-toggle="subParada"
-         onclick="toggleSub('subParada', this)">
-      <span class="icon">🏭</span>
-      <span class="nav-label">ATS Parada de Planta</span>
-      <span class="nav-arrow">›</span>
-    </div>
-    <div class="submenu" id="subParada">
-      <div id="sub-parada-categorias"></div>
-      <div class="sub-item" onclick="nuevaCategoriaParada()"
-           style="color:var(--accent);margin-top:4px">
-        ＋ Nueva Categoría
-      </div>
-    </div>
 
     <a href="#planos" class="nav-item" data-nav="planos"
        onclick="event.preventDefault();navigate('planos')">

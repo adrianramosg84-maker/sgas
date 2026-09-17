@@ -246,19 +246,7 @@ async function init() {
   await cargarCategoriasSidebar();
   await cargarCategoriasParada();
 
-  // Abrir submenú ATS por defecto
-  const subATS = document.getElementById('subATS');
-  if (subATS) {
-    subATS.classList.add('open');
-    document.querySelector('[data-toggle="subATS"]')?.classList.add('open');
-  }
-
-  // Abrir submenú Parada de Planta por defecto
-  const subParada = document.getElementById('subParada');
-  if (subParada) {
-    subParada.classList.add('open');
-    document.querySelector('[data-toggle="subParada"]')?.classList.add('open');
-  }
+  // Los submenús ATS arrancan cerrados — el usuario los abre con clic
 
   if (typeof loadConfig === 'function') loadConfig().catch(() => {});
 
