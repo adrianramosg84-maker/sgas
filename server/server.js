@@ -48,6 +48,8 @@ init().then(() => {
   app.use('/api/config',      require('./routes/config'));
   app.use('/api/categorias',  require('./routes/categorias'));
   app.use('/api/equipos',     require('./routes/equipos'));
+  app.use('/api/sheets',      require('./routes/sheets'));
+  app.use('/api/checklists',  require('./routes/checklists'));
 
   app.get('/api/ping', (req, res) => {
     res.json({ ok: true, timestamp: new Date().toISOString() });

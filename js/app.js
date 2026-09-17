@@ -13,6 +13,7 @@ const Views = {
   inicio:        () => { setBreadcrumb([{ label: 'Inicio' }]); showView('inicio'); },
   emergencias:   () => {},
   planos:        () => {},
+  checklists:    () => {},
   equipos:       () => {},
   config:        () => {},
   atsLista:      () => {},
@@ -24,11 +25,13 @@ const ROUTES = {
   'inicio':               () => Views.inicio(),
   'emergencias':          () => Views.emergencias(),
   'planos':               () => Views.planos(),
+  'checklists':           () => Views.checklists(),
   'equipos':              () => Views.equipos(),
   'config':               () => Views.config(),
-  'talleres':             () => Views.genericoLista('talleres',             'ATS de Talleres'),
+  'semanales':            () => Views.genericoLista('semanales',            'ATS Semanales'),
   'rescatista':           () => Views.genericoLista('rescatista',           'Rescatista'),
   'actividades-criticas': () => Views.genericoLista('actividades-criticas', 'Actividades Críticas'),
+  'parada-planta':        () => Views.genericoLista('parada-planta',        'ATS Parada de Planta'),
 };
 
 /* ── Router ── */

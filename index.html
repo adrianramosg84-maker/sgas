@@ -68,10 +68,10 @@
       <span class="nav-label">Puntos de Emergencia</span>
     </a>
 
-    <a href="#talleres" class="nav-item" data-nav="talleres"
-       onclick="event.preventDefault();navigate('talleres')">
-      <span class="icon">🔧</span>
-      <span class="nav-label">ATS de Talleres</span>
+    <a href="#semanales" class="nav-item" data-nav="semanales"
+       onclick="event.preventDefault();navigate('semanales')">
+      <span class="icon">📅</span>
+      <span class="nav-label">ATS Semanales</span>
     </a>
 
     <a href="#rescatista" class="nav-item" data-nav="rescatista"
@@ -86,12 +86,24 @@
       <span class="nav-label">Actividades Críticas</span>
     </a>
 
+    <a href="#parada-planta" class="nav-item" data-nav="parada-planta"
+       onclick="event.preventDefault();navigate('parada-planta')">
+      <span class="icon">🏭</span>
+      <span class="nav-label">ATS Parada de Planta</span>
+    </a>
+
     <hr class="sep">
 
     <a href="#planos" class="nav-item" data-nav="planos"
        onclick="event.preventDefault();navigate('planos')">
       <span class="icon">📁</span>
       <span class="nav-label">Planos y Documentos</span>
+    </a>
+
+    <a href="#checklists" class="nav-item" data-nav="checklists"
+       onclick="event.preventDefault();navigate('checklists')">
+      <span class="icon">✅</span>
+      <span class="nav-label">Checklists</span>
     </a>
 
     <a href="#equipos" class="nav-item" data-nav="equipos"
@@ -210,6 +222,33 @@
                     lang="es" spellcheck="true"
                     placeholder="Escribí aquí cualquier observación, recomendación o información adicional relevante para esta tarea..."></textarea>
         </div>
+
+        <!-- Información para casos de Emergencia -->
+        <div class="obs-block" id="bloque-emergencia" style="margin-top:16px">
+          <h2>🚨 Información para casos de Emergencia</h2>
+          <div class="emerg-info-grid">
+            <div class="emerg-info-row">
+              <label>Ubicación del Punto de Reunión</label>
+              <input type="text" id="f-emerg-reunion" placeholder="Ej: Portería Norte, Zona Verde..." />
+            </div>
+            <div class="emerg-info-row">
+              <label>Ubicación de Alarmas de Emergencia</label>
+              <input type="text" id="f-emerg-alarmas" placeholder="Ej: Columna A-12, Panel central..." />
+            </div>
+            <div class="emerg-info-row">
+              <label>Ubicación de Extintores</label>
+              <input type="text" id="f-emerg-extintores" placeholder="Ej: Pasillo B, cada 15m..." />
+            </div>
+            <div class="emerg-info-row">
+              <label>Ubicación de Lavaojos / Duchas / Botiquín de Primeros Auxilios</label>
+              <input type="text" id="f-emerg-lavaojos" placeholder="Ej: Baño planta baja, Sector C..." />
+            </div>
+            <div class="emerg-info-row">
+              <label>En caso de emergencia llamar a</label>
+              <input type="text" id="f-emerg-contacto" placeholder="Ej: Supervisión: 911 / Seguridad: Int. 222..." />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ════════════════════════════
@@ -317,51 +356,28 @@
       <!-- /emerg_detalle -->
 
       <!-- ════════════════════════════
-           VISTA: EQUIPOS / TAG
+           VISTA: EQUIPOS / TAG (Google Sheets)
       ════════════════════════════ -->
       <div class="view" id="view-equipos">
         <div class="view-header">
           <div class="view-title">Equipos / TAG</div>
           <div class="view-actions">
-            <input class="search-box" placeholder="🔍 Buscar en todos los campos..."
-                   style="width:280px"
-                   oninput="buscarEquipos(this.value)" id="equipos-search" />
-            <button class="btn btn-ghost" onclick="limpiarFiltros()">✕ Limpiar</button>
-            <button class="btn btn-ghost" id="btn-cargar-drive"
-                    onclick="mostrarInputDrive()">🔗 Desde Drive</button>
-            <button class="btn btn-primary" id="btn-cargar-excel"
-                    onclick="cargarExcelEquipos()">📂 Cargar Excel</button>
-          </div>
-          <!-- Input Drive (oculto por defecto) -->
-          <div id="drive-input-wrap" style="display:none;margin-bottom:12px">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input id="drive-url-input" type="text"
-                placeholder="Pegá el link de Google Drive del archivo Excel..."
-                style="flex:1;min-width:260px;font-size:13px" />
-              <button class="btn btn-primary" onclick="cargarDesdeGoogleDrive()">⬇️ Cargar</button>
-              <button class="btn btn-ghost" onclick="ocultarInputDrive()">✕</button>
-            </div>
-            <div style="font-size:11px;color:var(--text-dim);margin-top:5px">
-              El archivo debe estar compartido como "Cualquier persona con el link puede ver"
-            </div>
+            <button class="btn btn-primary" onclick="agregarSheet()">＋ Agregar Sheet</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <span id="equipos-info" style="font-size:12px;color:var(--text-dim)"></span>
-          <div id="equipos-paginacion" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-        </div>
-        <div id="equipos-tabla-wrap">
+        <div id="sheets-lista">
           <div style="text-align:center;padding:60px;color:var(--text-dim)">
-            <div style="font-size:40px;margin-bottom:16px">📋</div>
-            <div style="font-size:15px;margin-bottom:8px">No hay datos cargados</div>
-            <div style="font-size:13px">Hacé clic en <strong>Cargar Excel</strong> para importar tu archivo</div>
+            <div style="font-size:40px;margin-bottom:16px">📊</div>
+            <div style="font-size:15px;margin-bottom:8px">No hay Sheets cargados</div>
+            <div style="font-size:13px">Hacé clic en <strong>＋ Agregar Sheet</strong> para agregar un Google Sheet</div>
           </div>
         </div>
       </div>
 
       <!-- ════════════════════════════
            VISTA: PLANOS Y DOCUMENTOS
-      ════════════════════════════ -->      <div class="view" id="view-planos">
+      ════════════════════════════ -->
+      <div class="view" id="view-planos">
         <div class="view-header">
           <div class="view-title">Planos y Documentos</div>
           <div class="view-actions">
@@ -369,6 +385,19 @@
           </div>
         </div>
         <div class="doc-grid" id="doc-grid"></div>
+      </div>
+
+      <!-- ════════════════════════════
+           VISTA: CHECKLISTS
+      ════════════════════════════ -->
+      <div class="view" id="view-checklists">
+        <div class="view-header">
+          <div class="view-title">Checklists</div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="cargarChecklist()">📎 Cargar PDF</button>
+          </div>
+        </div>
+        <div class="doc-grid" id="checklist-grid"></div>
       </div>
 
       <!-- ════════════════════════════
@@ -442,6 +471,7 @@
 <script src="js/documentos.js"></script>
 <script src="js/config.js"></script>
 <script src="js/equipos.js"></script>
+<script src="js/checklists.js"></script>
 
 <script>
   /* ── Filtro búsqueda ATS ── */

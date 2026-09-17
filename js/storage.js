@@ -122,7 +122,7 @@ const Storage = (() => {
      INDEXEDDB (modo local)
      ================================================================ */
   const DB_NAME    = 'SGAS_DB';
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
 
   function initIndexedDB() {
     return new Promise((resolve, reject) => {
@@ -142,6 +142,10 @@ const Storage = (() => {
           database.createObjectStore('config', { keyPath: 'key' });
         if (!database.objectStoreNames.contains('categorias'))
           database.createObjectStore('categorias', { keyPath: 'id', autoIncrement: true });
+        if (!database.objectStoreNames.contains('sheets'))
+          database.createObjectStore('sheets', { keyPath: 'id', autoIncrement: true });
+        if (!database.objectStoreNames.contains('checklists'))
+          database.createObjectStore('checklists', { keyPath: 'id', autoIncrement: true });
       };
       req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror   = (e) => reject(e.target.error);
@@ -370,6 +374,54 @@ const Storage = (() => {
     },
   };
 
-  return { init, reconectar, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos };
+  /* ================================================================
+     API PÚBLICA — SHEETS (Google Sheets links)
+     ================================================================ */
+  const Sheets = {
+    getAll: async () => {
+      if (modoRed) return apiFetch('/api/sheets');
+      return idbGetAll('sheets');
+    },
+    save: async (record) => {
+      if (modoRed) {
+        const r = await apiFetch('/api/sheets', { method: 'POST', body: record });
+        record.id = r.id;
+        return r.id;
+      }
+      return idbSave('sheets', record);
+    },
+    remove: async (id) => {
+      if (modoRed) return apiFetch(`/api/sheets/${id}`, { method: 'DELETE' });
+      return idbRemove('sheets', id);
+    },
+  };
+
+  /* ================================================================
+     API PÚBLICA — CHECKLISTS
+     ================================================================ */
+  const Checklists = {
+    getAll: async () => {
+      if (modoRed) return apiFetch('/api/checklists');
+      return idbGetAll('checklists');
+    },
+    getById: async (id) => {
+      if (modoRed) return apiFetch(`/api/checklists/${id}`);
+      return idbGet('checklists', id);
+    },
+    save: async (record) => {
+      if (modoRed) {
+        const r = await apiFetch('/api/checklists', { method: 'POST', body: record });
+        record.id = r.id;
+        return r.id;
+      }
+      return idbSave('checklists', record);
+    },
+    remove: async (id) => {
+      if (modoRed) return apiFetch(`/api/checklists/${id}`, { method: 'DELETE' });
+      return idbRemove('checklists', id);
+    },
+  };
+
+  return { init, reconectar, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos, Sheets, Checklists };
 
 })();

@@ -65,6 +65,22 @@ async function init() {
 
     CREATE INDEX IF NOT EXISTS idx_ats_categoria  ON ats(categoria);
     CREATE INDEX IF NOT EXISTS idx_ats_updated_at ON ats(updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS sheets (
+      id          SERIAL PRIMARY KEY,
+      nombre      TEXT    NOT NULL,
+      url         TEXT    NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS checklists (
+      id          SERIAL PRIMARY KEY,
+      nombre      TEXT    NOT NULL,
+      fecha       TEXT    NOT NULL,
+      base64      TEXT    NOT NULL,
+      mime_type   TEXT    NOT NULL DEFAULT 'application/pdf',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
   console.log('Base de datos inicializada');
 }

@@ -136,6 +136,20 @@ function renderFicha() {
     obsEl.disabled = !editable;
   }
 
+  // Campos de emergencia
+  const emerg = ficha.emergencia || {};
+  const emergFields = [
+    ['f-emerg-reunion',    emerg.reunion    || ''],
+    ['f-emerg-alarmas',    emerg.alarmas    || ''],
+    ['f-emerg-extintores', emerg.extintores || ''],
+    ['f-emerg-lavaojos',   emerg.lavaojos   || ''],
+    ['f-emerg-contacto',   emerg.contacto   || ''],
+  ];
+  emergFields.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) { el.value = val; el.disabled = !editable; }
+  });
+
   document.getElementById('ficha-actions-saved').style.display = editable ? 'none' : '';
   document.getElementById('ficha-actions-edit').style.display  = editable ? '' : 'none';
   document.getElementById('btn-add-row').style.display         = editable ? '' : 'none';
@@ -220,9 +234,16 @@ async function guardarFicha() {
   }
   document.getElementById('f-nombre').style.borderColor = '';
 
-  ficha.filas        = leerFilasDOM();
+  ficha.filas         = leerFilasDOM();
   ficha.observaciones = document.getElementById('f-observaciones')?.value.trim() || '';
-  ficha.estado       = 'guardado';
+  ficha.emergencia    = {
+    reunion:    document.getElementById('f-emerg-reunion')?.value.trim()    || '',
+    alarmas:    document.getElementById('f-emerg-alarmas')?.value.trim()    || '',
+    extintores: document.getElementById('f-emerg-extintores')?.value.trim() || '',
+    lavaojos:   document.getElementById('f-emerg-lavaojos')?.value.trim()   || '',
+    contacto:   document.getElementById('f-emerg-contacto')?.value.trim()   || '',
+  };
+  ficha.estado = 'guardado';
 
   try {
     const id = await Storage.ATS.save(ficha);

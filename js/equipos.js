@@ -1,22 +1,10 @@
 /* ================================================================
    SGAS — equipos.js
-   Sección Equipos / TAG:
-   - Carga Excel con Web Worker (no bloquea la UI)
-   - Búsqueda general + filtro por columna
-   - Paginación 200 filas por página
-   - Datos en memoria (sesión) + IndexedDB como caché local
-   - Sincronización con servidor en modo red
+   Equipos / TAG: gestor de links a Google Sheets
+   - Agregar sheets con nombre y URL
+   - Abrir en nueva pestaña
+   - Eliminar
    ================================================================ */
-
-const EquiposState = {
-  datos:       [],
-  columnas:    [],
-  filtrados:   [],
-  pagina:      1,
-  porPagina:   200,
-  busqueda:    '',
-  filtrosCols: {},
-};
 
 /* ================================================================
    RENDER VISTA
@@ -27,495 +15,104 @@ async function renderEquipos() {
     { label: 'Equipos / TAG' },
   ]);
 
-  // Si ya hay datos en memoria, mostrar directo
-  if (EquiposState.datos.length > 0) {
-    mostrarTablaEquipos();
-    showView('equipos');
-    return;
+  let sheets = [];
+  try { sheets = await Storage.Sheets.getAll(); } catch(e) {}
+
+  const lista = document.getElementById('sheets-lista');
+  if (!lista) { showView('equipos'); return; }
+
+  if (!sheets || sheets.length === 0) {
+    lista.innerHTML = `
+      <div style="text-align:center;padding:60px;color:var(--text-dim)">
+        <div style="font-size:40px;margin-bottom:16px">📊</div>
+        <div style="font-size:15px;margin-bottom:8px">No hay Sheets cargados</div>
+        <div style="font-size:13px">Hacé clic en <strong>＋ Agregar Sheet</strong> para agregar un Google Sheet</div>
+      </div>`;
+  } else {
+    lista.innerHTML = '';
+    sheets.forEach(sheet => {
+      const card = document.createElement('div');
+      card.className = 'sheet-card';
+      card.innerHTML = `
+        <div class="sheet-icon">📊</div>
+        <div class="sheet-info">
+          <div class="sheet-nombre">${escapeHtml(sheet.nombre)}</div>
+          <div class="sheet-url">${escapeHtml(sheet.url)}</div>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn-primary btn-sm" onclick="abrirSheet('${escapeHtml(sheet.url).replace(/'/g,"\\'")}')">
+            🔗 Abrir
+          </button>
+          <button class="icon-btn ib-del" onclick="eliminarSheet(${sheet.id})" title="Eliminar">🗑️</button>
+        </div>`;
+      lista.appendChild(card);
+    });
   }
 
-  // Modo RED: intentar cargar desde el servidor
-  if (Storage.getModo() === 'red') {
-    try {
-      mostrarProgreso('Cargando equipos del servidor...');
-      const lista = await Storage.Equipos.getAll();
-      if (lista && lista.length > 0) {
-        // Cargar el más reciente con datos completos
-        const completo = await Storage.Equipos.getById(lista[0].id);
-        if (completo && completo.datos && completo.datos.length > 0) {
-          EquiposState.columnas  = completo.columnas;
-          EquiposState.datos     = completo.datos;
-          EquiposState.filtrados = completo.datos;
-          mostrarTablaEquipos();
-          showView('equipos');
-          return;
-        }
-      }
-    } catch(e) {}
-  }
-
-  // Modo LOCAL: intentar cargar desde IndexedDB
-  try {
-    const saved = await idbGetEquipos();
-    if (saved && saved.datos && saved.datos.length > 0) {
-      EquiposState.columnas  = saved.columnas;
-      EquiposState.datos     = saved.datos;
-      EquiposState.filtrados = saved.datos;
-      mostrarTablaEquipos();
-      showView('equipos');
-      return;
-    }
-  } catch(e) {}
-
-  mostrarTablaEquipos();
   showView('equipos');
 }
 
 /* ================================================================
-   INDEXEDDB
+   AGREGAR SHEET
    ================================================================ */
-function abrirDBEquipos() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('SGAS_EQUIPOS', 1);
-    req.onupgradeneeded = (e) => {
-      e.target.result.createObjectStore('equipos', { keyPath: 'id' });
-    };
-    req.onsuccess  = (e) => resolve(e.target.result);
-    req.onerror    = ()  => reject(req.error);
-  });
-}
-
-async function idbGetEquipos() {
-  const db = await abrirDBEquipos();
-  return new Promise((resolve, reject) => {
-    const r = db.transaction('equipos','readonly').objectStore('equipos').get('main');
-    r.onsuccess = () => resolve(r.result);
-    r.onerror   = () => reject(r.error);
-  });
-}
-
-async function idbSaveEquipos(data) {
-  const db = await abrirDBEquipos();
-  return new Promise((resolve, reject) => {
-    const r = db.transaction('equipos','readwrite').objectStore('equipos').put({ id:'main', ...data });
-    r.onsuccess = () => resolve();
-    r.onerror   = () => reject(r.error);
-  });
-}
-
-/* ================================================================
-   CARGAR EXCEL (con Web Worker)
-   ================================================================ */
-function cargarExcelEquipos() {
-  const input = document.createElement('input');
-  input.type   = 'file';
-  input.accept = '.xlsx,.xls,.csv';
-  input.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    mostrarProgreso('Leyendo archivo...');
-
-    try {
-      const buffer = await file.arrayBuffer();
-
-      // Usar Web Worker para no bloquear UI
-      const workerUrl = 'js/equipos-worker.js';
-      const worker    = new Worker(workerUrl);
-
-      worker.onmessage = async (ev) => {
-        const msg = ev.data;
-
-        if (msg.tipo === 'progreso') {
-          mostrarProgreso(msg.msg);
-          return;
-        }
-
-        if (msg.tipo === 'error') {
-          ocultarProgreso();
-          toast(msg.msg || 'Error al procesar el archivo', 'error');
-          worker.terminate();
-          return;
-        }
-
-        if (msg.tipo === 'ok') {
-          worker.terminate();
-
-          EquiposState.columnas    = msg.columnas;
-          EquiposState.datos       = msg.datos;
-          EquiposState.filtrados   = msg.datos;
-          EquiposState.pagina      = 1;
-          EquiposState.busqueda    = '';
-          EquiposState.filtrosCols = {};
-
-          // Limpiar filtros en UI
-          const search = document.getElementById('equipos-search');
-          if (search) search.value = '';
-
-          mostrarProgreso('Guardando en caché...');
-
-          // Guardar en servidor (modo red) o IndexedDB (modo local)
-          if (Storage.getModo() === 'red') {
-            try {
-              const nombreArchivo = file.name.replace(/\.[^.]+$/, '');
-              await Storage.Equipos.save({
-                nombre:   nombreArchivo,
-                columnas: EquiposState.columnas,
-                datos:    EquiposState.datos,
-              });
-              toast(`✓ ${msg.total.toLocaleString()} equipos cargados y sincronizados`);
-            } catch(e) {
-              console.warn('No se pudo sincronizar con el servidor:', e);
-              toast(`✓ ${msg.total.toLocaleString()} equipos cargados (solo local)`);
-            }
-          } else {
-            try {
-              await idbSaveEquipos({
-                columnas: EquiposState.columnas,
-                datos:    EquiposState.datos,
-              });
-            } catch(e) {
-              console.warn('No se pudo guardar en IndexedDB (datos muy grandes), se usará solo en memoria');
-            }
-            toast(`✓ ${msg.total.toLocaleString()} equipos cargados`);
-          }
-
-          ocultarProgreso();
-          mostrarTablaEquipos();
-        }
-      };
-
-      worker.onerror = (err) => {
-        ocultarProgreso();
-        // Fallback: procesar en hilo principal si el worker falla
-        procesarExcelDirecto(buffer, file.name);
-        worker.terminate();
-      };
-
-      worker.postMessage({ buffer }, [buffer]);
-
-    } catch(err) {
-      ocultarProgreso();
-      toast('Error al leer el archivo', 'error');
-    }
-  });
-  input.click();
-}
-
-/* ── Fallback: procesar sin worker ── */
-async function procesarExcelDirecto(buffer, nombre) {
-  try {
-    mostrarProgreso('Procesando (modo directo)...');
-    const wb   = XLSX.read(buffer, { type: 'array', cellDates: true });
-    const ws   = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
-
-    if (!json || json.length === 0) {
-      toast('El archivo está vacío', 'error');
-      ocultarProgreso();
-      return;
-    }
-
-    EquiposState.columnas    = Object.keys(json[0]);
-    EquiposState.datos       = json;
-    EquiposState.filtrados   = json;
-    EquiposState.pagina      = 1;
-    EquiposState.busqueda    = '';
-    EquiposState.filtrosCols = {};
-
-    ocultarProgreso();
-    mostrarTablaEquipos();
-    toast(`✓ ${json.length.toLocaleString()} equipos cargados`);
-  } catch(e) {
-    ocultarProgreso();
-    toast('Error al procesar el archivo', 'error');
-  }
-}
-
-/* ── Indicador de progreso ── */
-function mostrarProgreso(msg) {
-  const wrap = document.getElementById('equipos-tabla-wrap');
-  if (!wrap) return;
-  wrap.innerHTML = `
-    <div style="text-align:center;padding:60px;color:var(--text-dim)">
-      <div style="font-size:32px;margin-bottom:16px;animation:spin 1s linear infinite;display:inline-block">⏳</div>
-      <div style="font-size:14px;margin-top:8px">${msg}</div>
-    </div>`;
-}
-function ocultarProgreso() {
-  // Se limpia al llamar mostrarTablaEquipos
-}
-
-/* ================================================================
-   FILTROS
-   ================================================================ */
-function buscarEquipos(q) {
-  EquiposState.busqueda = q.toLowerCase();
-  EquiposState.pagina   = 1;
-  aplicarFiltros();
-}
-
-function filtrarColumna(col, val) {
-  EquiposState.filtrosCols[col] = val;
-  EquiposState.pagina = 1;
-  aplicarFiltros();
-}
-
-function aplicarFiltros() {
-  let result = EquiposState.datos;
-
-  if (EquiposState.busqueda) {
-    const q = EquiposState.busqueda;
-    result = result.filter(row =>
-      EquiposState.columnas.some(col =>
-        String(row[col] ?? '').toLowerCase().includes(q)
-      )
-    );
-  }
-
-  Object.entries(EquiposState.filtrosCols).forEach(([col, val]) => {
-    if (val) {
-      const v = val.toLowerCase();
-      result = result.filter(row =>
-        String(row[col] ?? '').toLowerCase().includes(v)
-      );
-    }
-  });
-
-  EquiposState.filtrados = result;
-  renderTablaEquipos();
-}
-
-function limpiarFiltros() {
-  EquiposState.busqueda    = '';
-  EquiposState.filtrosCols = {};
-  EquiposState.pagina      = 1;
-  const search = document.getElementById('equipos-search');
-  if (search) search.value = '';
-  aplicarFiltros();
-}
-
-/* ================================================================
-   MOSTRAR TABLA
-   ================================================================ */
-function mostrarTablaEquipos() {
-  const wrap = document.getElementById('equipos-tabla-wrap');
-  if (!wrap) return;
-
-  if (!EquiposState.datos || EquiposState.datos.length === 0) {
-    wrap.innerHTML = `
-      <div style="text-align:center;padding:60px;color:var(--text-dim)">
-        <div style="font-size:40px;margin-bottom:16px">📋</div>
-        <div style="font-size:15px;margin-bottom:8px">No hay datos cargados</div>
-        <div style="font-size:13px">Hacé clic en <strong>📂 Cargar Excel</strong> para importar tu archivo</div>
-      </div>`;
-    document.getElementById('equipos-info').textContent = '';
-    document.getElementById('equipos-paginacion').innerHTML = '';
-    return;
-  }
-
-  aplicarFiltros();
-}
-
-function renderTablaEquipos() {
-  const wrap = document.getElementById('equipos-tabla-wrap');
-  if (!wrap) return;
-
-  const { filtrados, columnas, pagina, porPagina } = EquiposState;
-  const total   = filtrados.length;
-  const inicio  = (pagina - 1) * porPagina;
-  const fin     = Math.min(inicio + porPagina, total);
-  const paginas = Math.ceil(total / porPagina);
-  const filas   = filtrados.slice(inicio, fin);
-
-  // Info
-  const infoEl = document.getElementById('equipos-info');
-  if (infoEl) infoEl.textContent =
-    `${total.toLocaleString()} equipos encontrados — mostrando ${inicio+1}–${fin}`;
-
-  // Tabla
-  const thead = columnas.map(col => `
-    <th>
-      <div class="equip-th-wrap">
-        <span title="${escapeHtml(col)}">${escapeHtml(col)}</span>
-        <input class="equip-col-filter" type="text"
-          placeholder="Filtrar..."
-          value="${escapeHtml(EquiposState.filtrosCols[col] || '')}"
-          oninput="filtrarColumna('${escapeHtml(col).replace(/'/g,"\\'")}', this.value)"
-          onclick="event.stopPropagation()" />
-      </div>
-    </th>`).join('');
-
-  const tbody = filas.map(row =>
-    '<tr>' + columnas.map(col =>
-      `<td title="${escapeHtml(String(row[col]??''))}">${escapeHtml(String(row[col]??''))}</td>`
-    ).join('') + '</tr>'
-  ).join('');
-
-  wrap.innerHTML = `<div style="overflow-x:auto">
-    <table class="equip-table">
-      <thead><tr>${thead}</tr></thead>
-      <tbody>${tbody}</tbody>
-    </table>
-  </div>`;
-
-  renderPaginacion(paginas, pagina);
-}
-
-/* ================================================================
-   PAGINACIÓN
-   ================================================================ */
-function renderPaginacion(totalPaginas, actual) {
-  const cont = document.getElementById('equipos-paginacion');
-  if (!cont) return;
-  if (totalPaginas <= 1) { cont.innerHTML = ''; return; }
-
-  const delta = 2;
-  const pages = new Set([1, totalPaginas]);
-  for (let i = Math.max(2, actual-delta); i <= Math.min(totalPaginas-1, actual+delta); i++) pages.add(i);
-  const sorted = [...pages].sort((a,b) => a-b);
-
-  let html = `<button class="eq-pg-btn" ${actual===1?'disabled':''} onclick="irPagina(${actual-1})">‹ Ant</button>`;
-  let prev = 0;
-  sorted.forEach(p => {
-    if (p - prev > 1) html += `<span class="eq-pg-dots">…</span>`;
-    html += `<button class="eq-pg-btn ${p===actual?'active':''}" onclick="irPagina(${p})">${p}</button>`;
-    prev = p;
-  });
-  html += `<button class="eq-pg-btn" ${actual===totalPaginas?'disabled':''} onclick="irPagina(${actual+1})">Sig ›</button>`;
-
-  cont.innerHTML = html;
-}
-
-function irPagina(p) {
-  const max = Math.ceil(EquiposState.filtrados.length / EquiposState.porPagina);
-  if (p < 1 || p > max) return;
-  EquiposState.pagina = p;
-  renderTablaEquipos();
-  document.getElementById('equipos-tabla-wrap')?.scrollIntoView({ behavior:'smooth', block:'start' });
-}
-
-/* ── Animación spinner ── */
-const spinStyle = document.createElement('style');
-spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-document.head.appendChild(spinStyle);
-
-/* ================================================================
-   CARGAR DESDE GOOGLE DRIVE
-   ================================================================ */
-function mostrarInputDrive() {
-  const wrap = document.getElementById('drive-input-wrap');
-  if (wrap) wrap.style.display = 'block';
-  setTimeout(() => document.getElementById('drive-url-input')?.focus(), 100);
-}
-
-function ocultarInputDrive() {
-  const wrap = document.getElementById('drive-input-wrap');
-  if (wrap) wrap.style.display = 'none';
-  const input = document.getElementById('drive-url-input');
-  if (input) input.value = '';
-}
-
-function extraerIdDrive(url) {
-  // Formatos de URL de Drive:
-  // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-  // https://drive.google.com/open?id=FILE_ID
-  // https://docs.google.com/spreadsheets/d/FILE_ID/edit
-  const patterns = [
-    /\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /[?&]id=([a-zA-Z0-9_-]+)/,
-    /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-async function cargarDesdeGoogleDrive() {
-  const input = document.getElementById('drive-url-input');
-  const url   = input?.value?.trim();
-  if (!url) { toast('Pegá el link de Google Drive primero', 'error'); return; }
-
-  const fileId = extraerIdDrive(url);
-  if (!fileId) {
-    toast('Link de Drive no válido. Asegurate de copiar el link completo.', 'error');
-    return;
-  }
-
-  ocultarInputDrive();
-  mostrarProgreso('Descargando desde Google Drive...');
-
-  // URL de descarga directa de Drive
-  const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-
-  try {
-    const res = await fetch(downloadUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const contentType = res.headers.get('content-type') || '';
-    // Drive a veces devuelve una página HTML de confirmación para archivos grandes
-    if (contentType.includes('text/html')) {
-      ocultarProgreso();
-      toast('El archivo es muy grande para descarga directa. Intentá con un archivo más pequeño o exportalo como .csv desde Drive.', 'error');
-      return;
-    }
-
-    mostrarProgreso('Procesando archivo...');
-    const buffer = await res.arrayBuffer();
-
-    // Procesar con Web Worker igual que el flujo normal
-    const worker = new Worker('js/equipos-worker.js');
-    const nombreArchivo = `Drive_${new Date().toLocaleDateString('es-AR').replace(/\//g,'-')}`;
-
-    worker.onmessage = async (ev) => {
-      const msg = ev.data;
-      if (msg.tipo === 'progreso') { mostrarProgreso(msg.msg); return; }
-      if (msg.tipo === 'error') {
-        ocultarProgreso();
-        toast(msg.msg || 'Error al procesar el archivo', 'error');
-        worker.terminate();
-        return;
-      }
-      if (msg.tipo === 'ok') {
-        worker.terminate();
-        EquiposState.columnas    = msg.columnas;
-        EquiposState.datos       = msg.datos;
-        EquiposState.filtrados   = msg.datos;
-        EquiposState.pagina      = 1;
-        EquiposState.busqueda    = '';
-        EquiposState.filtrosCols = {};
-        const search = document.getElementById('equipos-search');
-        if (search) search.value = '';
-        mostrarProgreso('Guardando en caché...');
-        if (Storage.getModo() === 'red') {
+function agregarSheet() {
+  // Usamos el modal en dos pasos: primero nombre, luego URL
+  openModal(
+    'Nuevo Google Sheet',
+    'Nombre del Sheet',
+    'Ej: Equipos Planta Norte, Instrumentos Área 3...',
+    async (nombre) => {
+      // Segundo modal para la URL
+      openModal(
+        'Link de Google Sheets',
+        'URL del Sheet',
+        'Pegá el link completo de Google Sheets...',
+        async (url) => {
           try {
-            await Storage.Equipos.save({ nombre: nombreArchivo, columnas: EquiposState.columnas, datos: EquiposState.datos });
-            toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive y sincronizados`);
+            await Storage.Sheets.save({ nombre, url });
+            toast('✓ Sheet agregado');
+            renderEquipos();
           } catch(e) {
-            toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive (solo local)`);
+            const { texto } = Storage.mensajeError(e);
+            toast(`Error al guardar: ${texto}`, 'error');
           }
-        } else {
-          try { await idbSaveEquipos({ columnas: EquiposState.columnas, datos: EquiposState.datos }); } catch(e) {}
-          toast(`✓ ${msg.total.toLocaleString()} equipos cargados desde Drive`);
         }
-        ocultarProgreso();
-        mostrarTablaEquipos();
-      }
-    };
+      );
+      // Pre-rellenar con URL vacía
+      setTimeout(() => {
+        const input = document.getElementById('modal-input');
+        if (input) { input.value = ''; input.focus(); }
+      }, 130);
+    }
+  );
+}
 
-    worker.onerror = () => {
-      ocultarProgreso();
-      procesarExcelDirecto(buffer, nombreArchivo);
-      worker.terminate();
-    };
+/* ================================================================
+   ABRIR SHEET EN NUEVA PESTAÑA
+   ================================================================ */
+function abrirSheet(url) {
+  if (!url) { toast('URL no válida', 'error'); return; }
+  // Convertir cualquier formato de URL de Sheets a /view para apertura limpia
+  let finalUrl = url.trim();
+  // Si es un link de edición, convertirlo a vista pública
+  if (finalUrl.includes('/edit')) {
+    finalUrl = finalUrl.replace(/\/edit.*$/, '/view');
+  }
+  window.open(finalUrl, '_blank', 'noopener,noreferrer');
+}
 
-    worker.postMessage({ buffer }, [buffer]);
-
+/* ================================================================
+   ELIMINAR SHEET
+   ================================================================ */
+async function eliminarSheet(id) {
+  if (!confirm('¿Eliminar este Sheet?')) return;
+  try {
+    await Storage.Sheets.remove(id);
+    toast('Sheet eliminado');
+    renderEquipos();
   } catch(e) {
-    ocultarProgreso();
-    toast('No se pudo descargar el archivo. Verificá que el link sea público.', 'error');
+    const { texto } = Storage.mensajeError(e);
+    toast(`Error al eliminar: ${texto}`, 'error');
   }
 }
 
@@ -523,12 +120,7 @@ async function cargarDesdeGoogleDrive() {
 Views.equipos = () => renderEquipos();
 
 /* ── Exponer globalmente ── */
-window.renderEquipos         = renderEquipos;
-window.cargarExcelEquipos    = cargarExcelEquipos;
-window.buscarEquipos         = buscarEquipos;
-window.filtrarColumna        = filtrarColumna;
-window.limpiarFiltros        = limpiarFiltros;
-window.irPagina              = irPagina;
-window.mostrarInputDrive     = mostrarInputDrive;
-window.ocultarInputDrive     = ocultarInputDrive;
-window.cargarDesdeGoogleDrive = cargarDesdeGoogleDrive;
+window.renderEquipos = renderEquipos;
+window.agregarSheet  = agregarSheet;
+window.abrirSheet    = abrirSheet;
+window.eliminarSheet = eliminarSheet;
