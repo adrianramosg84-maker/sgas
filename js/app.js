@@ -253,6 +253,13 @@ async function init() {
     document.querySelector('[data-toggle="subATS"]')?.classList.add('open');
   }
 
+  // Abrir submenú Parada de Planta por defecto
+  const subParada = document.getElementById('subParada');
+  if (subParada) {
+    subParada.classList.add('open');
+    document.querySelector('[data-toggle="subParada"]')?.classList.add('open');
+  }
+
   if (typeof loadConfig === 'function') loadConfig().catch(() => {});
 
   route(location.hash.slice(1) || 'inicio');
