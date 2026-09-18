@@ -33,6 +33,9 @@ const ROUTES = {
   'actividades-criticas': () => Views.genericoLista('actividades-criticas', 'Actividades Críticas'),
 };
 
+/* ── Rutas de checklists por categoría ── */
+// Registradas dinámicamente en route() para manejar cualquier nombre de categoría
+
 /* ── Router ── */
 function route(hash) {
   hash = hash || location.hash.slice(1) || 'inicio';
@@ -49,6 +52,13 @@ function route(hash) {
     const cat = decodeURIComponent(hash.slice(7));
     Views.atsLista(cat, 'parada');
     return;
+  }
+  if (hash.startsWith('checklists/')) {
+    const cat = decodeURIComponent(hash.slice(11));
+    if (cat && typeof renderChecklistsLista === 'function') {
+      renderChecklistsLista(cat);
+      return;
+    }
   }
   if (hash.startsWith('ats/ficha')) return;
   const fn = ROUTES[hash];
@@ -228,6 +238,8 @@ async function intentarReconectar() {
   if (ok) {
     toast('✓ Conectado al servidor. Recargando datos...');
     await cargarCategoriasSidebar();
+    await cargarCategoriasParada();
+    await cargarCategoriasChecklistSidebar();
     route(location.hash.slice(1) || 'inicio');
   } else {
     toast('No se pudo conectar. Intentá en 30 segundos.', 'error');
@@ -245,6 +257,7 @@ async function init() {
   // Cargar categorías dinámicas en sidebar
   await cargarCategoriasSidebar();
   await cargarCategoriasParada();
+  await cargarCategoriasChecklistSidebar();
 
   // Los submenús ATS arrancan cerrados — el usuario los abre con clic
 
@@ -258,6 +271,73 @@ document.addEventListener('DOMContentLoaded', init);
 window.nuevaCategoria          = nuevaCategoria;
 window.eliminarCategoria       = eliminarCategoria;
 window.cargarCategoriasSidebar = cargarCategoriasSidebar;
+
+/* ================================================================
+   CATEGORÍAS CHECKLISTS EN SIDEBAR
+   ================================================================ */
+async function cargarCategoriasChecklistSidebar() {
+  const container = document.getElementById('sub-checklists-categorias');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:var(--text-dim)">Cargando...</div>';
+
+  try {
+    const cats = await Storage.Categorias.getAll('checklist');
+    container.innerHTML = '';
+
+    // Siempre mostrar "General" como primer ítem fijo
+    const divGeneral = document.createElement('a');
+    divGeneral.className = 'sub-item';
+    divGeneral.href = '#checklists/General';
+    divGeneral.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate('checklists/General');
+    });
+    const spanGeneral = document.createElement('span');
+    spanGeneral.style.flex = '1';
+    spanGeneral.textContent = 'General';
+    divGeneral.appendChild(spanGeneral);
+    container.appendChild(divGeneral);
+
+    cats.forEach(cat => {
+      const div = document.createElement('a');
+      div.className = 'sub-item';
+      div.href = `#checklists/${encodeURIComponent(cat.nombre)}`;
+      div.dataset.cat = cat.nombre;
+
+      const spanNombre = document.createElement('span');
+      spanNombre.style.flex = '1';
+      spanNombre.textContent = cat.nombre;
+      spanNombre.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate(`checklists/${encodeURIComponent(cat.nombre)}`);
+      });
+
+      const spanDel = document.createElement('span');
+      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
+      spanDel.title = 'Eliminar categoría';
+      spanDel.textContent = '✕';
+      spanDel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (typeof eliminarCategoriaChecklist === 'function')
+          eliminarCategoriaChecklist(cat.id, cat.nombre);
+      });
+
+      div.appendChild(spanNombre);
+      div.appendChild(spanDel);
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="padding:6px 16px 6px 40px;font-size:11px;color:#f87171">Error al cargar</div>';
+  }
+}
+
+async function nuevaCategoriaChecklistSidebar() {
+  if (typeof nuevaCategoriaChecklist === 'function') nuevaCategoriaChecklist();
+}
+
+window.cargarCategoriasChecklistSidebar = cargarCategoriasChecklistSidebar;
+window.nuevaCategoriaChecklistSidebar   = nuevaCategoriaChecklistSidebar;
 
 /* ================================================================
    CATEGORÍAS PARADA DE PLANTA

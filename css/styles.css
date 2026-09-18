@@ -380,6 +380,7 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
 .icon-btn:hover { filter: brightness(1.15); }
 .ib-edit { background: var(--btn-edit); color: #fff; }
 .ib-pdf  { background: rgba(0,180,216,.2); color: var(--accent); }
+.ib-xls  { background: rgba(33,155,97,.2); color: #21a35f; }
 .ib-del  { background: rgba(155,35,53,.3); color: #f87171; }
 
 /* ================================================================
@@ -588,34 +589,78 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
 .etd-del { width: 32px; text-align: center; background: var(--card) !important; }
 
 /* ================================================================
-   PLANOS Y DOCUMENTOS
+   PLANOS Y DOCUMENTOS — Layout lista
    ================================================================ */
 .doc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(185px,1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Fila de lista */
+.doc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: border-color .2s;
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 14px;
 }
-.doc-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px; cursor: pointer;
-  transition: border-color .2s; position: relative;
-}
 .doc-card:hover { border-color: var(--accent); }
-.doc-icon { font-size: 32px; margin-bottom: 10px; }
-.doc-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; word-break: break-word; }
-.doc-date { font-size: 11px; color: var(--text-dim); }
+
+.doc-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.doc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-date {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
 .doc-del {
-  position: absolute; top: 8px; right: 8px;
-  background: none; border: none; color: #f87171;
-  font-size: 14px; cursor: pointer; opacity: 0; transition: opacity .15s;
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
 }
 .doc-card:hover .doc-del { opacity: .7; }
-.doc-del:hover { opacity: 1 !important; }
+.doc-del:hover { opacity: 1 !important; background: rgba(155,35,53,.2); }
+
+/* Fila "Cargar" al final */
 .doc-add {
-  border: 2px dashed var(--border); background: transparent;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  min-height: 110px; opacity: .5; cursor: pointer;
+  border: 2px dashed var(--border);
+  background: transparent;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  opacity: .5;
   transition: opacity .2s, border-color .2s;
 }
 .doc-add:hover { opacity: .8; border-color: var(--accent); }

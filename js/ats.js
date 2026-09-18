@@ -62,6 +62,7 @@ async function renderAtsLista(categoria, tipo = 'ats') {
         <td class="td-actions">
           <button class="icon-btn ib-edit" onclick="abrirFichaEdit(${ficha.id})">✏️</button>
           <button class="icon-btn ib-pdf"  onclick="exportarPdfAts(${ficha.id})">📄</button>
+          <button class="icon-btn ib-xls"  onclick="exportarExcelAts(${ficha.id})" title="Descargar Excel">📊</button>
           <button class="icon-btn ib-del"  onclick="eliminarFicha(${ficha.id})">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
@@ -403,6 +404,82 @@ async function exportarPdfAts(id) {
   doc.save(nombreArchivo);
 }
 
+/* ================================================================
+   EXPORTAR EXCEL — SheetJS (xlsx)
+   Estructura:
+   - Fila 1-2: encabezado (nombre del ATS, categoría, fecha)
+   - Fila 3:   cabeceras de columna
+   - Filas 4+: pasos de la tarea
+   - Fila final: observaciones (si las hay)
+   Sin sección de emergencia.
+   ================================================================ */
+async function exportarExcelAts(id) {
+  let ficha = AtsState.fichaActual;
+  if (id) { try { ficha = await Storage.ATS.getById(id); } catch(e) {} }
+  if (!ficha) return;
+
+  if (!window.XLSX) {
+    toast('Librería Excel no cargada, intentá de nuevo en unos segundos', 'error');
+    return;
+  }
+
+  const fechaHoy      = new Date().toLocaleDateString('es-AR');
+  const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g, '-')}.xlsx`;
+  const filas         = ficha.filas || [];
+
+  /* ── Construir array de arrays (AOA) ── */
+  const aoa = [];
+
+  // Encabezado
+  aoa.push(['ANÁLISIS DE TRABAJO SEGURO (ATS)', '', '']);
+  aoa.push([`Categoría: ${ficha.categoria}`, `Fecha: ${fechaHoy}`, `Estado: ${ficha.estado === 'guardado' ? 'Guardado' : 'Borrador'}`]);
+  aoa.push([`Tarea: ${ficha.nombre}`, '', '']);
+  aoa.push([]); // fila vacía separadora
+
+  // Cabeceras de la tabla
+  aoa.push(['#', 'Pasos de la tarea', 'Peligros identificados', 'Medidas de control']);
+
+  // Filas de datos
+  filas.forEach((f, i) => {
+    aoa.push([
+      i + 1,
+      f.paso    || '',
+      f.peligro || '',
+      f.control || '',
+    ]);
+  });
+
+  // Observaciones
+  if (ficha.observaciones && ficha.observaciones.trim()) {
+    aoa.push([]); // separador
+    aoa.push(['Observaciones / Recomendaciones:', '', '', '']);
+    aoa.push([ficha.observaciones, '', '', '']);
+  }
+
+  /* ── Crear hoja y libro ── */
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Anchos de columna (en caracteres aprox.)
+  ws['!cols'] = [
+    { wch: 5  },  // #
+    { wch: 45 },  // Pasos
+    { wch: 40 },  // Peligros
+    { wch: 40 },  // Controles
+  ];
+
+  // Merge celdas del encabezado (filas 0, 2) a lo ancho de las 4 columnas
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // título principal
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }, // nombre de la tarea
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ATS');
+
+  XLSX.writeFile(wb, nombreArchivo);
+  toast('✓ Excel descargado');
+}
+
 /* ── Registrar vistas en el router ── */
 Views.atsLista = (cat, tipo) => renderAtsLista(cat, tipo || 'ats');
 Views.genericoLista = (slug, label) => {
@@ -412,22 +489,16 @@ Views.genericoLista = (slug, label) => {
 };
 
 /* ── Exponer globalmente ── */
-window.agregarFila     = agregarFila;
-window.eliminarFila    = eliminarFila;
-window.guardarFicha    = guardarFicha;
-window.editarFicha     = editarFicha;
-window.eliminarFicha   = eliminarFicha;
-window.abrirFichaSaved = abrirFichaSaved;
-window.abrirFichaEdit  = abrirFichaEdit;
-window.exportarPdfAts  = exportarPdfAts;
-window.renderAtsLista  = renderAtsLista;
-window.crearNuevaFicha = crearNuevaFicha;
+window.agregarFila      = agregarFila;
+window.eliminarFila     = eliminarFila;
+window.guardarFicha     = guardarFicha;
+window.editarFicha      = editarFicha;
+window.eliminarFicha    = eliminarFicha;
+window.abrirFichaSaved  = abrirFichaSaved;
+window.abrirFichaEdit   = abrirFichaEdit;
+window.exportarPdfAts   = exportarPdfAts;
+window.exportarExcelAts = exportarExcelAts;
+window.renderAtsLista   = renderAtsLista;
+window.crearNuevaFicha  = crearNuevaFicha;
 
-/* ── Utility ── */
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-window.escapeHtml = escapeHtml;
+/* ── escapeHtml se define en js/utils.js (cargado antes que este módulo) ── */

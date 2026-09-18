@@ -97,6 +97,11 @@ async function init() {
       mime_type   TEXT    NOT NULL DEFAULT 'application/pdf',
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    -- Agregar columna categoria a checklists (sin tocar registros existentes → quedan en 'General')
+    ALTER TABLE checklists ADD COLUMN IF NOT EXISTS categoria TEXT NOT NULL DEFAULT 'General';
+
+    CREATE INDEX IF NOT EXISTS idx_checklists_categoria ON checklists(categoria);
   `);
   console.log('Base de datos inicializada');
 }

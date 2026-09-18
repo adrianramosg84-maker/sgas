@@ -10,8 +10,27 @@ const Storage = (() => {
   /* ── Configuración ── */
   // Cambiá esta URL por la URL de tu servidor en Render
   const SERVER_URL = 'https://sgas-server.onrender.com';
+
+  /* ── ADVERTENCIA DE SEGURIDAD ──────────────────────────────────────
+     La API Key está expuesta aquí porque este archivo es público
+     (GitHub Pages). Cualquier persona puede verla en el código fuente.
+
+     RIESGO: Alguien con esta clave puede leer, crear o borrar datos
+     llamando directamente a la API desde fuera de la app.
+
+     SOLUCIONES RECOMENDADAS (de menor a mayor complejidad):
+       1. MÍNIMA: Cambiá la clave periódicamente en Render
+          (Settings → Environment Variables → API_KEY) y actualizá
+          este archivo. Esto limita la ventana de exposición.
+       2. MEJOR: Implementar autenticación de usuarios (login/password)
+          en el servidor y reemplazar la API Key estática por tokens
+          de sesión por usuario.
+       3. IDEAL: Mover el servidor a una arquitectura donde el frontend
+          no necesite claves, usando sesiones del lado del servidor
+          (ej. cookie httpOnly).
+  ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── */
   // API Key — debe coincidir con la variable de entorno API_KEY en Render
-  const API_KEY    = 'sgas-2024-clave-segura';
+  const API_KEY = 'sgas-2024-clave-segura';
 
   let modoRed = false;
   let db      = null;  // IndexedDB (modo local)
@@ -19,15 +38,29 @@ const Storage = (() => {
   /* ================================================================
      DETECCIÓN AUTOMÁTICA DE MODO
      ================================================================ */
+  // Promesa que se resuelve cuando el usuario hace clic en "Usar sin conexión"
+  let _resolverModoLocal = null;
+
   async function init() {
     mostrarEstadoConexion('conectando');
     try {
-      // Timeout de 60s para dar tiempo al servidor a despertar en Render free tier
+      // Timeout de 12s — si el servidor no responde, caer a modo local.
+      // El usuario puede acelerar esto con el botón "Usar sin conexión".
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 60000);
-      const res = await fetch(`${SERVER_URL}/api/ping`, { signal: controller.signal });
+      const timer = setTimeout(() => controller.abort(), 12000);
+
+      // Carrera: fetch contra el botón "Usar sin conexión"
+      const saltarPromesa = new Promise(res => { _resolverModoLocal = res; });
+      const resultado = await Promise.race([
+        fetch(`${SERVER_URL}/api/ping`, { signal: controller.signal })
+          .then(r => ({ tipo: 'fetch', res: r }))
+          .catch(() => ({ tipo: 'error' })),
+        saltarPromesa.then(() => ({ tipo: 'saltar' })),
+      ]);
       clearTimeout(timer);
-      if (res.ok) {
+      _resolverModoLocal = null;
+
+      if (resultado.tipo === 'fetch' && resultado.res?.ok) {
         modoRed = true;
         mostrarEstadoConexion('red');
         console.log('SGAS: Modo RED activo →', SERVER_URL);
@@ -45,7 +78,7 @@ const Storage = (() => {
     mostrarEstadoConexion('conectando');
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 60000);
+      const timer = setTimeout(() => controller.abort(), 12000);
       const res = await fetch(`${SERVER_URL}/api/ping`, { signal: controller.signal });
       clearTimeout(timer);
       if (res.ok) {
@@ -59,11 +92,17 @@ const Storage = (() => {
     return false;
   }
 
+  // Permite al usuario saltar la espera y entrar en modo local inmediatamente
+  function usarSinConexion() {
+    if (_resolverModoLocal) _resolverModoLocal();
+  }
+
   function mostrarEstadoConexion(estado) {
     const el = document.getElementById('conn-status');
     if (!el) return;
     if (estado === 'conectando') {
-      el.innerHTML = `<span class="conn-dot conn-waiting"></span> Conectando al servidor...`;
+      el.innerHTML = `<span class="conn-dot conn-waiting"></span> Conectando al servidor...
+        &nbsp;<button onclick="Storage.usarSinConexion()" class="conn-retry" title="Entrar sin esperar al servidor">Usar sin conexión</button>`;
       el.style.display = 'flex';
     } else if (estado === 'red') {
       el.innerHTML = `<span class="conn-dot conn-ok"></span> En línea`;
@@ -408,11 +447,17 @@ const Storage = (() => {
       if (modoRed) return apiFetch('/api/checklists');
       return idbGetAll('checklists');
     },
+    getByCategoria: async (cat) => {
+      if (modoRed) return apiFetch(`/api/checklists?categoria=${encodeURIComponent(cat)}`);
+      const rows = await idbGetAll('checklists');
+      return rows.filter(r => (r.categoria || 'General') === cat);
+    },
     getById: async (id) => {
       if (modoRed) return apiFetch(`/api/checklists/${id}`);
       return idbGet('checklists', id);
     },
     save: async (record) => {
+      if (!record.categoria) record.categoria = 'General';
       if (modoRed) {
         const r = await apiFetch('/api/checklists', { method: 'POST', body: record });
         record.id = r.id;
@@ -426,6 +471,6 @@ const Storage = (() => {
     },
   };
 
-  return { init, reconectar, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos, Sheets, Checklists };
+  return { init, reconectar, usarSinConexion, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos, Sheets, Checklists };
 
 })();
