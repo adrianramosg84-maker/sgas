@@ -18,14 +18,36 @@ router.post('/', async (req, res) => {
     const { nombre, tipo } = req.body;
     const t = tipo || 'ats';
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+
+    // Verificar si ya existe para hacer upsert seguro sin depender del constraint
+    const existing = await pool.query(
+      'SELECT * FROM categorias WHERE nombre=$1 AND tipo=$2',
+      [nombre, t]
+    );
+    if (existing.rows[0]) {
+      return res.status(201).json(existing.rows[0]);
+    }
+
     const result = await pool.query(
-      `INSERT INTO categorias (nombre, tipo)
-       VALUES ($1, $2)
-       ON CONFLICT (nombre, tipo) DO UPDATE SET nombre=$1
-       RETURNING *`,
+      'INSERT INTO categorias (nombre, tipo) VALUES ($1, $2) RETURNING *',
       [nombre, t]
     );
     res.status(201).json(result.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const { nombre, tipo } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
+    const t = tipo || 'ats';
+    const result = await pool.query(
+      `UPDATE categorias SET nombre=$1, tipo=$2 WHERE id=$3 RETURNING *`,
+      [nombre, t, req.params.id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: 'Categoría no encontrada' });
+    res.json(result.rows[0]);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
