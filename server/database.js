@@ -102,6 +102,9 @@ async function init() {
     ALTER TABLE checklists ADD COLUMN IF NOT EXISTS categoria TEXT NOT NULL DEFAULT 'General';
 
     CREATE INDEX IF NOT EXISTS idx_checklists_categoria ON checklists(categoria);
+
+    -- Eliminar constraint único solo por nombre (legacy) para permitir mismo nombre en distintos tipos
+    ALTER TABLE categorias DROP CONSTRAINT IF EXISTS categorias_nombre_key;
   `);
   console.log('Base de datos inicializada');
 }
