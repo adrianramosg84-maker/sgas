@@ -37,9 +37,10 @@ async function renderChecklistsHome() {
   try { cats = await Storage.Categorias.getAll('checklist'); } catch(e) {}
 
   // Siempre mostrar "General" primero, luego las categorías creadas
+  // Filtrar "General" de la lista dinámica para evitar duplicados
   const todasLasCats = [
     { id: '__general__', nombre: 'General', _esFija: true },
-    ...cats,
+    ...cats.filter(c => c.nombre.toLowerCase() !== 'general'),
   ];
 
   const grid = document.getElementById('checklist-grid');
@@ -166,10 +167,12 @@ async function nuevaCategoriaChecklist() {
 async function eliminarCategoriaChecklist(id, nombre) {
   if (!confirm(`¿Eliminar la categoría "${nombre}"?\nLos checklists de esta categoría también serán eliminados.`)) return;
   try {
-    // Eliminar los checklists de la categoría primero (modo local)
-    // En modo red el servidor no tiene cascada para checklists, los eliminamos manualmente
-    const items = await Storage.Checklists.getByCategoria(nombre);
-    await Promise.all(items.map(item => Storage.Checklists.remove(item.id)));
+    // En modo red el servidor hace CASCADE automático en la transacción DELETE de categorías.
+    // En modo local no hay cascade, así que borramos los checklists manualmente.
+    if (Storage.getModo() === 'local') {
+      const items = await Storage.Checklists.getByCategoria(nombre);
+      await Promise.all(items.map(item => Storage.Checklists.remove(item.id)));
+    }
     await Storage.Categorias.remove(id);
     await cargarCategoriasChecklistSidebar();
     toast('Categoría eliminada');

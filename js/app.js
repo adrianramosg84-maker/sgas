@@ -272,6 +272,31 @@ window.nuevaCategoria          = nuevaCategoria;
 window.eliminarCategoria       = eliminarCategoria;
 window.cargarCategoriasSidebar = cargarCategoriasSidebar;
 
+/* ── Filtro búsqueda ATS (movido desde index.html) ── */
+function filtrarTablaAts(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#ats-lista-tbody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+window.filtrarTablaAts = filtrarTablaAts;
+
+/* ── Dashboard: Views.inicio con stats (movido desde index.html) ── */
+Views.inicio = async () => {
+  setBreadcrumb([{ label: 'Inicio' }]);
+  showView('inicio');
+  try {
+    const [ats, areas, docs] = await Promise.all([
+      Storage.ATS.getAll(),
+      Storage.Emergencias.getAll(),
+      Storage.Documentos.getAll(),
+    ]);
+    document.getElementById('stat-ats').textContent   = ats.length;
+    document.getElementById('stat-areas').textContent = areas.length;
+    document.getElementById('stat-docs').textContent  = docs.length;
+  } catch(e) {}
+};
+
 /* ================================================================
    CATEGORÍAS CHECKLISTS EN SIDEBAR
    ================================================================ */
@@ -285,6 +310,7 @@ async function cargarCategoriasChecklistSidebar() {
     container.innerHTML = '';
 
     // Siempre mostrar "General" como primer ítem fijo
+    // Filtrar "General" de la lista dinámica para evitar duplicados
     const divGeneral = document.createElement('a');
     divGeneral.className = 'sub-item';
     divGeneral.href = '#checklists/General';
@@ -298,7 +324,7 @@ async function cargarCategoriasChecklistSidebar() {
     divGeneral.appendChild(spanGeneral);
     container.appendChild(divGeneral);
 
-    cats.forEach(cat => {
+    cats.filter(c => c.nombre.toLowerCase() !== 'general').forEach(cat => {
       const div = document.createElement('a');
       div.className = 'sub-item';
       div.href = `#checklists/${encodeURIComponent(cat.nombre)}`;

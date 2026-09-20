@@ -323,3 +323,12 @@ window.eliminarArea       = eliminarArea;
 window.exportarPdfArea    = exportarPdfArea;
 window.agregarFilaEmerg   = agregarFilaEmerg;
 window.eliminarFilaEmerg  = eliminarFilaEmerg;
+
+/* ── Filtro búsqueda Emergencias (movido desde index.html) ── */
+function filtrarAreas(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#emerg-lista-container .emerg-area-card').forEach(card => {
+    card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+window.filtrarAreas = filtrarAreas;

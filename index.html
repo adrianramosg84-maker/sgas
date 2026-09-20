@@ -481,8 +481,8 @@
 <div id="toast"></div>
 
 <!-- ══ SCRIPTS ══ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" crossorigin="anonymous" defer></script>
+<script src="js/jspdf.umd.min.js" defer></script>
+<script src="js/jspdf.plugin.autotable.min.js" defer></script>
 <script src="js/exceljs.min.js?v=430"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
@@ -493,57 +493,6 @@
 <script src="js/config.js"></script>
 <script src="js/equipos.js"></script>
 <script src="js/checklists.js"></script>
-
-<script>
-  /* ── Filtro búsqueda ATS ── */
-  function filtrarTablaAts(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll('#ats-lista-tbody tr').forEach(tr => {
-      const txt = tr.textContent.toLowerCase();
-      tr.style.display = txt.includes(q) ? '' : 'none';
-    });
-  }
-
-  /* ── Filtro búsqueda Emergencias ── */
-  function filtrarAreas(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll('#emerg-lista-container .emerg-area-card').forEach(card => {
-      const txt = card.textContent.toLowerCase();
-      card.style.display = txt.includes(q) ? '' : 'none';
-    });
-  }
-
-  /* ── Dashboard: sobreescribir Views.inicio para cargar stats ── */
-  Views.inicio = async () => {
-    setBreadcrumb([{ label: 'Inicio' }]);
-    showView('inicio');
-    try {
-      const [ats, areas, docs] = await Promise.all([
-        Storage.ATS.getAll(),
-        Storage.Emergencias.getAll(),
-        Storage.Documentos.getAll(),
-      ]);
-      document.getElementById('stat-ats').textContent   = ats.length;
-      document.getElementById('stat-areas').textContent = areas.length;
-      document.getElementById('stat-docs').textContent  = docs.length;
-    } catch(e) {}
-  };
-
-  /* ── Nueva ficha desde sidebar (sin categoría activa: pedir categoría también) ── */
-  function nuevaFichaDesdeSidebar() {
-    // Si hay categoría activa en AtsState, crear directamente
-    const cat = (typeof AtsState !== 'undefined' && AtsState.categoria)
-      ? AtsState.categoria
-      : null;
-    if (cat) {
-      openModal('Nueva Ficha ATS', 'Nombre del ATS',
-        'Ej: Trabajos en caliente — Caldera 3', crearNuevaFicha);
-    } else {
-      // Navegar a inicio y sugerir elegir categoría
-      toast('Seleccioná una categoría del menú primero');
-      navigate('inicio');
-    }
-  }
 
   /* ── Enter / Escape en modal ── */
   document.getElementById('modal-input').addEventListener('keydown', e => {

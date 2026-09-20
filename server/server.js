@@ -44,19 +44,19 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// Ping registrado ANTES de init() — responde inmediatamente aunque la DB esté conectando
+app.get('/api/ping', (req, res) => {
+  res.json({ ok: true, timestamp: new Date().toISOString() });
+});
+
 init().then(() => {
   app.use('/api/ats',         require('./routes/ats'));
   app.use('/api/emergencias', require('./routes/emergencias'));
   app.use('/api/documentos',  require('./routes/documentos'));
   app.use('/api/config',      require('./routes/config'));
   app.use('/api/categorias',  require('./routes/categorias'));
-  app.use('/api/equipos',     require('./routes/equipos'));
   app.use('/api/sheets',      require('./routes/sheets'));
   app.use('/api/checklists',  require('./routes/checklists'));
-
-  app.get('/api/ping', (req, res) => {
-    res.json({ ok: true, timestamp: new Date().toISOString() });
-  });
 
   app.listen(PORT, () => {
     console.log(`SGAS Server corriendo en puerto ${PORT}`);
