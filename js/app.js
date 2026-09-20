@@ -462,7 +462,6 @@ async function nuevaCategoriaParada() {
 }
 
 async function eliminarCategoriaParada(id, nombre) {
-async function eliminarCategoriaParada(id, nombre) {
   if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSe eliminarán también todas sus fichas ATS.`)) return;
   try {
     // En modo local hacer cascade manual (en modo red el servidor lo hace en transacción)
