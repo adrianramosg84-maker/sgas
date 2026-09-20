@@ -1,6 +1,7 @@
-const express = require('express');
-const router  = express.Router();
-const { pool } = require('../database');
+const express      = require('express');
+const router       = express.Router();
+const { pool }     = require('../database');
+const { validarId } = require('./helpers');
 
 router.get('/', async (req, res) => {
   try {
@@ -19,17 +20,12 @@ router.post('/', async (req, res) => {
     const t = tipo || 'ats';
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
 
-    // Verificar si ya existe para hacer upsert seguro sin depender del constraint
-    const existing = await pool.query(
-      'SELECT * FROM categorias WHERE nombre=$1 AND tipo=$2',
-      [nombre, t]
-    );
-    if (existing.rows[0]) {
-      return res.status(201).json(existing.rows[0]);
-    }
-
+    // Upsert atómico — evita race condition del SELECT+INSERT manual
     const result = await pool.query(
-      'INSERT INTO categorias (nombre, tipo) VALUES ($1, $2) RETURNING *',
+      `INSERT INTO categorias (nombre, tipo)
+       VALUES ($1, $2)
+       ON CONFLICT (nombre, tipo) DO UPDATE SET nombre = EXCLUDED.nombre
+       RETURNING *`,
       [nombre, t]
     );
     res.status(201).json(result.rows[0]);
@@ -37,6 +33,7 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
+  if (!validarId(req, res)) return;
   try {
     const { nombre, tipo } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
@@ -52,6 +49,7 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
+  if (!validarId(req, res)) return;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

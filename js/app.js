@@ -220,6 +220,11 @@ async function nuevaCategoria() {
 async function eliminarCategoria(id, nombre) {
   if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSe eliminarán también todas sus fichas ATS.`)) return;
   try {
+    // En modo local hacer cascade manual (en modo red el servidor lo hace en transacción)
+    if (Storage.getModo() === 'local') {
+      const fichas = await Storage.ATS.getByCategoria(nombre, 'ats');
+      await Promise.all(fichas.map(f => Storage.ATS.remove(f.id)));
+    }
     await Storage.Categorias.remove(id);
     await cargarCategoriasSidebar();
     toast('Categoría eliminada');
@@ -236,7 +241,19 @@ async function intentarReconectar() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Conectando...'; }
   const ok = await Storage.reconectar();
   if (ok) {
-    toast('✓ Conectado al servidor. Recargando datos...');
+    // Verificar si hay datos en modo local que podrían no estar en el servidor
+    try {
+      const localAts = await Storage.ATS.getAll('ats');
+      const localAtsParada = await Storage.ATS.getAll('parada');
+      const totalLocal = localAts.length + localAtsParada.length;
+      if (totalLocal > 0) {
+        toast(`✓ Conectado. Nota: tenés ${totalLocal} fichas en modo local que no están en el servidor.`);
+      } else {
+        toast('✓ Conectado al servidor. Recargando datos...');
+      }
+    } catch(e) {
+      toast('✓ Conectado al servidor. Recargando datos...');
+    }
     await cargarCategoriasSidebar();
     await cargarCategoriasParada();
     await cargarCategoriasChecklistSidebar();
@@ -445,8 +462,14 @@ async function nuevaCategoriaParada() {
 }
 
 async function eliminarCategoriaParada(id, nombre) {
+async function eliminarCategoriaParada(id, nombre) {
   if (!confirm(`¿Eliminar la categoría "${nombre}"?\nSe eliminarán también todas sus fichas ATS.`)) return;
   try {
+    // En modo local hacer cascade manual (en modo red el servidor lo hace en transacción)
+    if (Storage.getModo() === 'local') {
+      const fichas = await Storage.ATS.getByCategoria(nombre, 'parada');
+      await Promise.all(fichas.map(f => Storage.ATS.remove(f.id)));
+    }
     await Storage.Categorias.remove(id);
     await cargarCategoriasParada();
     toast('Categoría eliminada');

@@ -3,11 +3,12 @@
    API REST Node.js + Express + PostgreSQL (Supabase)
    ================================================================ */
 
-const express = require('express');
-const cors    = require('cors');
-const morgan  = require('morgan');
-const helmet  = require('helmet');
-const { init } = require('./database');
+const express   = require('express');
+const cors      = require('cors');
+const morgan    = require('morgan');
+const helmet    = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { init }  = require('./database');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,16 @@ app.use(cors({
     if (allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
     callback(new Error('CORS: origen no permitido'));
   }
+}));
+
+// Rate limiting — máximo 200 requests por IP cada 15 minutos
+app.use('/api', rateLimit({
+  windowMs:        15 * 60 * 1000,
+  max:             200,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message:         { error: 'Demasiadas solicitudes. Intentá de nuevo en unos minutos.' },
+  skip: (req) => req.path === '/ping', // ping no se limita
 }));
 
 app.use(express.json({ limit: '50mb' }));

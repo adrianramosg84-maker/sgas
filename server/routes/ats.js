@@ -1,6 +1,7 @@
-const express = require('express');
-const router  = express.Router();
-const { pool } = require('../database');
+const express    = require('express');
+const router     = express.Router();
+const { pool }   = require('../database');
+const { validarId } = require('./helpers');
 
 router.get('/', async (req, res) => {
   try {
@@ -38,6 +39,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
+  if (!validarId(req, res)) return;
   try {
     const result = await pool.query('SELECT * FROM ats WHERE id = $1', [req.params.id]);
     if (!result.rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -63,6 +65,7 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
+  if (!validarId(req, res)) return;
   try {
     const { nombre, categoria, estado, filas, observaciones, tipo, emergencia } = req.body;
     if (!nombre || !categoria) return res.status(400).json({ error: 'nombre y categoria requeridos' });
@@ -83,6 +86,7 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
+  if (!validarId(req, res)) return;
   try {
     const result = await pool.query('DELETE FROM ats WHERE id = $1 RETURNING id', [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: 'No encontrado' });

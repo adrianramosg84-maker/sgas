@@ -75,13 +75,22 @@ async function renderChecklistsHome() {
           <div class="doc-date">${count} checklist${count !== 1 ? 's' : ''}</div>
         </div>
         ${!cat._esFija ? `
-        <button class="doc-del" title="Eliminar categoría"
-          onclick="event.stopPropagation();eliminarCategoriaChecklist(${cat.id},'${escapeHtml(cat.nombre).replace(/'/g,"\\'")}')">✕</button>
+        <button class="doc-del" title="Eliminar categoría" data-cat-id="${cat.id}" data-cat-nombre="${escapeHtml(cat.nombre)}">✕</button>
         ` : ''}
       </div>`;
     card.addEventListener('click', () => {
       navigate(`checklists/${encodeURIComponent(cat.nombre)}`);
     });
+    // Event listener para botón eliminar (evita interpolación de strings en onclick)
+    const btnDel = card.querySelector('.doc-del[data-cat-id]');
+    if (btnDel) {
+      btnDel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const catId     = parseInt(btnDel.dataset.catId);
+        const catNombre = btnDel.dataset.catNombre;
+        eliminarCategoriaChecklist(catId, catNombre);
+      });
+    }
     grid.appendChild(card);
   }
 
