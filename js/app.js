@@ -254,6 +254,15 @@ async function init() {
 
   initSidebar();
 
+  // Event listeners del modal
+  document.getElementById('modal-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter')  confirmModal();
+    if (e.key === 'Escape') closeModal();
+  });
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
   // Cargar categorías dinámicas en sidebar
   await cargarCategoriasSidebar();
   await cargarCategoriasParada();

@@ -493,15 +493,6 @@
 <script src="js/config.js"></script>
 <script src="js/equipos.js"></script>
 <script src="js/checklists.js"></script>
-
-  /* ── Enter / Escape en modal ── */
-  document.getElementById('modal-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter')  confirmModal();
-    if (e.key === 'Escape') closeModal();
-  });
-  document.getElementById('modal-overlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
-  });
 </script>
 
 </body>
