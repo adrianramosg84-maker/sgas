@@ -52,9 +52,9 @@ router.delete('/:id', async (req, res) => {
 function parseArea(row) {
   return {
     ...row,
-    extintores: JSON.parse(row.extintores || '[]'),
-    duchas:     JSON.parse(row.duchas     || '[]'),
-    alarmas:    JSON.parse(row.alarmas    || '[]'),
+    extintores: (() => { try { return JSON.parse(row.extintores || '[]'); } catch(_) { return []; } })(),
+    duchas:     (() => { try { return JSON.parse(row.duchas     || '[]'); } catch(_) { return []; } })(),
+    alarmas:    (() => { try { return JSON.parse(row.alarmas    || '[]'); } catch(_) { return []; } })(),
   };
 }
 

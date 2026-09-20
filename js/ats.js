@@ -22,7 +22,7 @@ async function renderAtsLista(categoria, tipo = 'ats') {
 
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
-    { label: tipo === 'parada' ? 'Parada de Planta' : categoria, hash: tipo === 'parada' ? null : null },
+    { label: tipo === 'parada' ? 'Parada de Planta' : categoria, hash: tipo === 'parada' ? 'parada' : null },
     { label: categoria },
   ]);
 
@@ -275,7 +275,7 @@ async function eliminarFicha(id) {
   try {
     await Storage.ATS.remove(id);
     toast('Ficha eliminada');
-    renderAtsLista(AtsState.categoria);
+    renderAtsLista(AtsState.categoria, AtsState.tipo);
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
     toast(`Error al eliminar: ${texto}`, 'error');

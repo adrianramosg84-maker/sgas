@@ -91,8 +91,8 @@ router.delete('/:id', async (req, res) => {
 function parseAts(row) {
   return {
     ...row,
-    filas:      JSON.parse(row.filas      || '[]'),
-    emergencia: JSON.parse(row.emergencia || '{}'),
+    filas:      (() => { try { return JSON.parse(row.filas      || '[]'); } catch(_) { return []; } })(),
+    emergencia: (() => { try { return JSON.parse(row.emergencia || '{}'); } catch(_) { return {}; } })(),
   };
 }
 
