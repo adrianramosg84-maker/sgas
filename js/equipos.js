@@ -68,8 +68,24 @@ function agregarSheet() {
         'URL del Sheet',
         'Pegá el link completo de Google Sheets...',
         async (url) => {
+          // Validar que sea una URL real con protocolo http/https
+          if (!url || !url.trim()) {
+            toast('Ingresá una URL antes de confirmar', 'error');
+            return;
+          }
+          let urlObj;
           try {
-            await Storage.Sheets.save({ nombre, url });
+            urlObj = new URL(url.trim());
+          } catch(e) {
+            toast('La URL ingresada no es válida', 'error');
+            return;
+          }
+          if (urlObj.protocol !== 'https:' && urlObj.protocol !== 'http:') {
+            toast('Solo se permiten URLs http o https', 'error');
+            return;
+          }
+          try {
+            await Storage.Sheets.save({ nombre, url: urlObj.href });
             toast('✓ Sheet agregado');
             renderEquipos();
           } catch(e) {
@@ -92,9 +108,22 @@ function agregarSheet() {
    ================================================================ */
 function abrirSheet(url) {
   if (!url) { toast('URL no válida', 'error'); return; }
+
+  // Validar que sea una URL real con protocolo http/https
+  let urlObj;
+  try {
+    urlObj = new URL(url.trim());
+  } catch(e) {
+    toast('La URL ingresada no es válida', 'error');
+    return;
+  }
+  if (urlObj.protocol !== 'https:' && urlObj.protocol !== 'http:') {
+    toast('Solo se permiten URLs http o https', 'error');
+    return;
+  }
+
   // Convertir cualquier formato de URL de Sheets a /view para apertura limpia
-  let finalUrl = url.trim();
-  // Si es un link de edición, convertirlo a vista pública
+  let finalUrl = urlObj.href;
   if (finalUrl.includes('/edit')) {
     finalUrl = finalUrl.replace(/\/edit.*$/, '/view');
   }

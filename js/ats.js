@@ -405,21 +405,28 @@ async function exportarPdfAts(id) {
 }
 
 /* ================================================================
-   EXPORTAR EXCEL — SheetJS (xlsx)
-   Estructura:
-   - Fila 1-2: encabezado (nombre del ATS, categoría, fecha)
-   - Fila 3:   cabeceras de columna
-   - Filas 4+: pasos de la tarea
-   - Fila final: observaciones (si las hay)
-   Sin sección de emergencia.
+   EXPORTAR EXCEL — ExcelJS → .xlsx nativo con estilos reales
    ================================================================ */
 async function exportarExcelAts(id) {
   let ficha = AtsState.fichaActual;
   if (id) { try { ficha = await Storage.ATS.getById(id); } catch(e) {} }
   if (!ficha) return;
 
-  if (!window.XLSX) {
-    toast('Librería Excel no cargada, intentá de nuevo en unos segundos', 'error');
+  /* ── Cargar ExcelJS dinámicamente si no está disponible aún ── */
+  if (!window.ExcelJS) {
+    toast('Cargando librería Excel...');
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src     = 'https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js';
+      s.onload  = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    }).catch(() => null);
+  }
+
+  const EJS = window.ExcelJS;
+  if (!EJS || !EJS.Workbook) {
+    toast('No se pudo cargar la librería Excel. Verificá tu conexión.', 'error');
     return;
   }
 
@@ -427,56 +434,164 @@ async function exportarExcelAts(id) {
   const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g, '-')}.xlsx`;
   const filas         = ficha.filas || [];
 
-  /* ── Construir array de arrays (AOA) ── */
-  const aoa = [];
+  /* ── Helpers de estilo ── */
+  const AZUL    = { argb: 'FF2D4A6E' };
+  const VERDE   = { argb: 'FF4A6741' };
+  const GRIS    = { argb: 'FFEEF2F7' };
+  const GRIS2   = { argb: 'FFE8EDF5' };
+  const BLANCO  = { argb: 'FFFFFFFF' };
+  const GRISF   = { argb: 'FFF8FAFB' };
+  const AMARILL = { argb: 'FFFFFBEA' };
+  const NEGRO   = { argb: 'FF1A1A1A' };
+  const BLANCOT = { argb: 'FFFFFFFF' };
 
-  // Encabezado
-  aoa.push(['ANÁLISIS DE TRABAJO SEGURO (ATS)', '', '']);
-  aoa.push([`Categoría: ${ficha.categoria}`, `Fecha: ${fechaHoy}`, `Estado: ${ficha.estado === 'guardado' ? 'Guardado' : 'Borrador'}`]);
-  aoa.push([`Tarea: ${ficha.nombre}`, '', '']);
-  aoa.push([]); // fila vacía separadora
+  const borde = {
+    top:    { style: 'thin', color: { argb: 'FFB4B4B4' } },
+    left:   { style: 'thin', color: { argb: 'FFB4B4B4' } },
+    bottom: { style: 'thin', color: { argb: 'FFB4B4B4' } },
+    right:  { style: 'thin', color: { argb: 'FFB4B4B4' } },
+  };
 
-  // Cabeceras de la tabla
-  aoa.push(['#', 'Pasos de la tarea', 'Peligros identificados', 'Medidas de control']);
-
-  // Filas de datos
-  filas.forEach((f, i) => {
-    aoa.push([
-      i + 1,
-      f.paso    || '',
-      f.peligro || '',
-      f.control || '',
-    ]);
-  });
-
-  // Observaciones
-  if (ficha.observaciones && ficha.observaciones.trim()) {
-    aoa.push([]); // separador
-    aoa.push(['Observaciones / Recomendaciones:', '', '', '']);
-    aoa.push([ficha.observaciones, '', '', '']);
+  function estilo(fgColor, fontColor, bold = false, vAlign = 'middle', hAlign = 'left') {
+    return {
+      font:      { name: 'Calibri', size: 10, bold, color: { argb: fontColor.argb } },
+      fill:      { type: 'pattern', pattern: 'solid', fgColor },
+      alignment: { vertical: vAlign, horizontal: hAlign, wrapText: true },
+      border:    borde,
+    };
   }
 
-  /* ── Crear hoja y libro ── */
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const sTitulo   = estilo(AZUL,    BLANCOT, true,  'middle', 'center');
+  const sMeta     = estilo(GRIS,    NEGRO,   false, 'middle', 'left');
+  const sCabecera = estilo(AZUL,    BLANCOT, true,  'middle', 'center');
+  const sPaso     = estilo(GRIS2,   NEGRO,   true,  'middle', 'left');
+  const sDato     = estilo(BLANCO,  NEGRO,   false, 'top',    'left');
+  const sDatoAlt  = estilo(GRISF,   NEGRO,   false, 'top',    'left');
+  const sObsHead  = estilo(VERDE,   BLANCOT, true,  'middle', 'left');
+  const sObsBody  = estilo(AMARILL, NEGRO,   false, 'top',    'left');
 
-  // Anchos de columna (en caracteres aprox.)
-  ws['!cols'] = [
-    { wch: 5  },  // #
-    { wch: 45 },  // Pasos
-    { wch: 40 },  // Peligros
-    { wch: 40 },  // Controles
+  /* ── Crear libro y hoja ── */
+  const wb = new EJS.Workbook();
+  wb.creator = 'SGAS';
+  const ws = wb.addWorksheet('ATS', {
+    views: [{ showGridLines: false }],
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+  });
+
+  /* ── Anchos de columna ── */
+  ws.columns = [
+    { width: 38 },  // A — Etapas
+    { width: 42 },  // B — Peligros
+    { width: 42 },  // C — Medidas
   ];
 
-  // Merge celdas del encabezado (filas 0, 2) a lo ancho de las 4 columnas
-  ws['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // título principal
-    { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }, // nombre de la tarea
-  ];
+  /* ── Helper para agregar fila con estilo ── */
+  function agregarFila(valores, estilos, altura = 18) {
+    const row = ws.addRow(valores);
+    row.height = altura;
+    estilos.forEach((s, i) => {
+      if (s) Object.assign(row.getCell(i + 1), s);
+    });
+    return row;
+  }
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'ATS');
+  function aplicarEstilo(cell, s) {
+    cell.style = s;
+  }
 
-  XLSX.writeFile(wb, nombreArchivo);
+  /* ── Fila 1: Título (merge A-C) ── */
+  agregarFila(['ANÁLISIS DE TRABAJO SEGURO (ATS)', '', ''], [sTitulo, sTitulo, sTitulo], 28);
+  ws.mergeCells('A1:C1');
+
+  /* ── Fila 2: Metadatos ── */
+  agregarFila(
+    [`Categoría: ${ficha.categoria}`, `Fecha: ${fechaHoy}`, `Estado: ${ficha.estado === 'guardado' ? 'Guardado' : 'Borrador'}`],
+    [sMeta, sMeta, sMeta], 18
+  );
+
+  /* ── Fila 3: Nombre tarea (merge A-C) ── */
+  agregarFila([`Tarea: ${ficha.nombre}`, '', ''], [sMeta, sMeta, sMeta], 18);
+  ws.mergeCells(`A3:C3`);
+
+  /* ── Fila 4: Cabeceras (merge A-C vacío intermedio) ── */
+  agregarFila(
+    [
+      'Etapas de la Tarea\n(describa paso a paso las actividades)',
+      'Peligros / Consecuencias\n(Escriba lo que puede suceder si no se implementan controles)',
+      'Medidas de control requeridas',
+    ],
+    [sCabecera, sCabecera, sCabecera], 36
+  );
+
+  /* ── Filas de datos ── */
+  // Agrupa filas consecutivas con el mismo texto de paso (merge vertical)
+  const grupos = [];
+  filas.forEach((f) => {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.paso === (f.paso || '') && (f.paso || '').trim() !== '') {
+      ultimo.items.push(f);
+    } else {
+      grupos.push({ paso: f.paso || '', items: [f] });
+    }
+  });
+
+  let rowIdx = 5; // siguiente fila disponible (1-indexed)
+
+  grupos.forEach((grupo, gi) => {
+    const sFilaDato = gi % 2 === 0 ? sDato : sDatoAlt;
+    const filaInicio = rowIdx;
+
+    grupo.items.forEach((item) => {
+      const row = ws.addRow([grupo.paso, item.peligro || '', item.control || '']);
+      row.height = 60;
+      aplicarEstilo(row.getCell(1), sPaso);
+      aplicarEstilo(row.getCell(2), sFilaDato);
+      aplicarEstilo(row.getCell(3), sFilaDato);
+      rowIdx++;
+    });
+
+    // Merge vertical en columna A si hay más de 1 peligro para este paso
+    if (grupo.items.length > 1) {
+      ws.mergeCells(`A${filaInicio}:A${filaInicio + grupo.items.length - 1}`);
+    }
+  });
+
+  /* ── Observaciones ── */
+  if (ficha.observaciones && ficha.observaciones.trim()) {
+    // Fila separadora
+    const sepRow = ws.addRow(['', '', '']);
+    sepRow.height = 6;
+    rowIdx++;
+
+    // Encabezado observaciones
+    const headRow = ws.addRow(['Observaciones / Recomendaciones:', '', '']);
+    headRow.height = 20;
+    aplicarEstilo(headRow.getCell(1), sObsHead);
+    aplicarEstilo(headRow.getCell(2), sObsHead);
+    aplicarEstilo(headRow.getCell(3), sObsHead);
+    ws.mergeCells(`A${rowIdx}:C${rowIdx}`);
+    rowIdx++;
+
+    // Contenido observaciones
+    const obsRow = ws.addRow([ficha.observaciones, '', '']);
+    obsRow.height = 60;
+    aplicarEstilo(obsRow.getCell(1), sObsBody);
+    aplicarEstilo(obsRow.getCell(2), sObsBody);
+    aplicarEstilo(obsRow.getCell(3), sObsBody);
+    ws.mergeCells(`A${rowIdx}:C${rowIdx}`);
+  }
+
+  /* ── Descargar ── */
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  a.href       = url;
+  a.download   = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
   toast('✓ Excel descargado');
 }
 

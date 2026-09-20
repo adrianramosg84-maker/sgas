@@ -27,11 +27,13 @@ async function renderDocumentos() {
     const card = document.createElement('div');
     card.className = 'doc-card';
     card.innerHTML = `
-      <button class="doc-del" title="Eliminar documento"
-        onclick="event.stopPropagation(); eliminarDocumento(${doc.id})">✕</button>
       <div class="doc-icon">📄</div>
-      <div class="doc-name">${escapeHtml(doc.nombre)}</div>
-      <div class="doc-date">${doc.fecha || ''}</div>`;
+      <div class="doc-info">
+        <div class="doc-name">${escapeHtml(doc.nombre)}</div>
+        <div class="doc-date">${doc.fecha || ''}</div>
+      </div>
+      <button class="doc-del" title="Eliminar documento"
+        onclick="event.stopPropagation(); eliminarDocumento(${doc.id})">✕</button>`;
     card.addEventListener('click', () => abrirDocumento(doc));
     grid.appendChild(card);
   });
@@ -39,7 +41,7 @@ async function renderDocumentos() {
   // Tarjeta "Cargar documento"
   const addCard = document.createElement('div');
   addCard.className = 'doc-card doc-add';
-  addCard.innerHTML = `<div style="font-size:28px">＋</div><div style="font-size:12px;margin-top:6px">Cargar documento</div>`;
+  addCard.innerHTML = `<div class="doc-icon">＋</div><div style="font-size:12px">Cargar documento</div>`;
   addCard.addEventListener('click', cargarDocumento);
   grid.appendChild(addCard);
 
@@ -118,16 +120,7 @@ async function abrirDocumento(doc) {
       base64 = completo?.base64;
     }
     if (!base64) { toast('Documento no disponible', 'error'); return; }
-
-    const byteString  = atob(base64.split(',')[1] || base64);
-    const ab          = new ArrayBuffer(byteString.length);
-    const ia          = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const blob        = new Blob([ab], { type: 'application/pdf' });
-    const url         = URL.createObjectURL(blob);
-    const win         = window.open(url, '_blank');
-    if (!win) toast('Permitir popups para abrir documentos', 'error');
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    if (!abrirBase64EnPestana(base64)) toast('Permitir popups para abrir documentos', 'error');
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
     toast(`Error al abrir documento: ${texto}`, 'error');

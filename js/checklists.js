@@ -241,16 +241,7 @@ async function abrirChecklist(doc) {
       base64 = completo?.base64;
     }
     if (!base64) { toast('Checklist no disponible', 'error'); return; }
-
-    const byteString = atob(base64.split(',')[1] || base64);
-    const ab  = new ArrayBuffer(byteString.length);
-    const ia  = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const blob = new Blob([ab], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const win  = window.open(url, '_blank');
-    if (!win) toast('Permitir popups para abrir checklists', 'error');
-    setTimeout(() => URL.revokeObjectURL(url), 120000);
+    if (!abrirBase64EnPestana(base64)) toast('Permitir popups para abrir checklists', 'error');
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
     toast(`Error al abrir: ${texto}`, 'error');

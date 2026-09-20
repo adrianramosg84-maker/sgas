@@ -13,6 +13,16 @@ router.post('/', async (req, res) => {
   try {
     const { nombre, url } = req.body;
     if (!nombre || !url) return res.status(400).json({ error: 'nombre y url requeridos' });
+
+    // Validar que la URL tenga protocolo http o https (previene javascript: y otros esquemas)
+    let urlParsed;
+    try { urlParsed = new URL(url); } catch(_) {
+      return res.status(400).json({ error: 'La URL no es válida' });
+    }
+    if (!['http:', 'https:'].includes(urlParsed.protocol)) {
+      return res.status(400).json({ error: 'La URL debe comenzar con http:// o https://' });
+    }
+
     const result = await pool.query(
       'INSERT INTO sheets (nombre, url) VALUES ($1, $2) RETURNING *',
       [nombre, url]

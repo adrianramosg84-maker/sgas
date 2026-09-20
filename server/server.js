@@ -32,10 +32,13 @@ app.use(morgan('[:date[iso]] :method :url :status :res[content-length] - :respon
 
 // ── Autenticación API Key ──
 const API_KEY = process.env.API_KEY;
+if (!API_KEY) {
+  console.error('FATAL: La variable de entorno API_KEY no está configurada. El servidor no puede arrancar sin ella.');
+  process.exit(1);
+}
 app.use('/api', (req, res, next) => {
   // Ruta ping libre (para detección de modo red)
   if (req.path === '/ping') return next();
-  if (!API_KEY) return next(); // Si no hay API_KEY configurada, no bloquear
   const key = req.headers['x-api-key'];
   if (key !== API_KEY) return res.status(401).json({ error: 'No autorizado' });
   next();
