@@ -524,35 +524,47 @@ async function exportarExcelAts(id) {
   );
 
   /* ── Filas de datos ── */
-  // Agrupa filas consecutivas con el mismo texto de paso (merge vertical)
-  const grupos = [];
-  filas.forEach((f) => {
-    const ultimo = grupos[grupos.length - 1];
-    if (ultimo && ultimo.paso === (f.paso || '') && (f.paso || '').trim() !== '') {
-      ultimo.items.push(f);
-    } else {
-      grupos.push({ paso: f.paso || '', items: [f] });
-    }
-  });
+
+  // Divide un texto con ítems numerados "1. xxx 2. yyy" en un array de strings
+  // Soporta "1.", "1)", números con o sin espacio después
+  function dividirNumerados(texto) {
+    if (!texto || !texto.trim()) return [''];
+    // Separar por patrones tipo "1.", "2.", "10." al inicio de línea o después de salto
+    const partes = texto.split(/(?=\b\d+[.)]\s)/);
+    const resultado = partes.map(p => p.trim()).filter(p => p.length > 0);
+    return resultado.length > 1 ? resultado : [texto.trim()];
+  }
 
   let rowIdx = 5; // siguiente fila disponible (1-indexed)
 
-  grupos.forEach((grupo, gi) => {
-    const sFilaDato = gi % 2 === 0 ? sDato : sDatoAlt;
+  filas.forEach((f, fi) => {
+    const sFilaDato = fi % 2 === 0 ? sDato : sDatoAlt;
+    const paso      = (f.paso    || '').trim();
+    const peligros  = dividirNumerados(f.peligro);
+    const medidas   = dividirNumerados(f.control);
+    const cantFilas = Math.max(peligros.length, medidas.length);
     const filaInicio = rowIdx;
 
-    grupo.items.forEach((item) => {
-      const row = ws.addRow([grupo.paso, item.peligro || '', item.control || '']);
-      row.height = 60;
+    for (let i = 0; i < cantFilas; i++) {
+      const peligroTexto = peligros[i] || '';
+      const medidaTexto  = medidas[i]  || '';
+
+      // Columna A solo en la primera sub-fila, las demás vacías (quedan bajo el merge)
+      const row = ws.addRow([i === 0 ? paso : '', peligroTexto, medidaTexto]);
+
+      // Altura proporcional al texto más largo de la fila
+      const maxLen = Math.max(peligroTexto.length, medidaTexto.length);
+      row.height = maxLen > 200 ? 90 : maxLen > 100 ? 60 : 40;
+
       aplicarEstilo(row.getCell(1), sPaso);
       aplicarEstilo(row.getCell(2), sFilaDato);
       aplicarEstilo(row.getCell(3), sFilaDato);
       rowIdx++;
-    });
+    }
 
-    // Merge vertical en columna A si hay más de 1 peligro para este paso
-    if (grupo.items.length > 1) {
-      ws.mergeCells(`A${filaInicio}:A${filaInicio + grupo.items.length - 1}`);
+    // Merge vertical en columna A si hay más de 1 sub-fila
+    if (cantFilas > 1) {
+      ws.mergeCells(`A${filaInicio}:A${filaInicio + cantFilas - 1}`);
     }
   });
 
