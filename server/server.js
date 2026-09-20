@@ -6,6 +6,7 @@
 const express = require('express');
 const cors    = require('cors');
 const morgan  = require('morgan');
+const helmet  = require('helmet');
 const { init } = require('./database');
 
 const app  = express();
@@ -17,6 +18,7 @@ const allowedOrigins = [
   'http://localhost',
   'http://127.0.0.1',
 ];
+app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     // Permitir requests sin origin (Postman, curl, mismo servidor)

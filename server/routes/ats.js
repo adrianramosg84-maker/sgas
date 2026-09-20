@@ -65,6 +65,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { nombre, categoria, estado, filas, observaciones, tipo, emergencia } = req.body;
+    if (!nombre || !categoria) return res.status(400).json({ error: 'nombre y categoria requeridos' });
     const result = await pool.query(
       `UPDATE ats SET nombre=$1, categoria=$2, estado=$3, filas=$4, observaciones=$5,
        tipo=$6, emergencia=$7, updated_at=NOW()
@@ -83,7 +84,8 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM ats WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM ats WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

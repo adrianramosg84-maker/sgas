@@ -128,7 +128,10 @@ function renderFicha() {
 
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
-    { label: ficha.categoria, hash: `ats/${encodeURIComponent(ficha.categoria)}` },
+    { label: ficha.tipo === 'parada' ? 'Parada de Planta' : ficha.categoria,
+      hash: ficha.tipo === 'parada'
+        ? `parada/${encodeURIComponent(ficha.categoria)}`
+        : `ats/${encodeURIComponent(ficha.categoria)}` },
     { label: ficha.nombre || 'Nueva Ficha' },
   ]);
 
@@ -375,8 +378,10 @@ async function exportarPdfAts(id) {
       doc.text(`${ficha.categoria} — ${ficha.nombre}`, 6, pageH - 3.5);
       doc.text(`Página ${pg}`, pageW / 2, pageH - 3.5, { align: 'center' });
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(45, 106, 79);
-      doc.text('ESTADO: APROBADO', pageW - 6, pageH - 3.5, { align: 'right' });
+      const estadoTexto = ficha.estado === 'guardado' ? 'ESTADO: GUARDADO' : 'ESTADO: BORRADOR';
+      const estadoColor = ficha.estado === 'guardado' ? [45, 106, 79] : [181, 86, 10];
+      doc.setTextColor(...estadoColor);
+      doc.text(estadoTexto, pageW - 6, pageH - 3.5, { align: 'right' });
     },
   });
 

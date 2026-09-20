@@ -54,15 +54,6 @@ async function init() {
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    CREATE TABLE IF NOT EXISTS equipos (
-      id          SERIAL PRIMARY KEY,
-      nombre      TEXT    NOT NULL,
-      total       INTEGER NOT NULL DEFAULT 0,
-      columnas    TEXT    NOT NULL DEFAULT '[]',
-      datos       TEXT    NOT NULL DEFAULT '[]',
-      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-
     CREATE INDEX IF NOT EXISTS idx_ats_categoria  ON ats(categoria);
     CREATE INDEX IF NOT EXISTS idx_ats_updated_at ON ats(updated_at DESC);
 

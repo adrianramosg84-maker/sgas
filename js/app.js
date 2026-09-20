@@ -295,12 +295,13 @@ Views.inicio = async () => {
   setBreadcrumb([{ label: 'Inicio' }]);
   showView('inicio');
   try {
-    const [ats, areas, docs] = await Promise.all([
-      Storage.ATS.getAll(),
+    const [ats, parada, areas, docs] = await Promise.all([
+      Storage.ATS.getAll('ats'),
+      Storage.ATS.getAll('parada'),
       Storage.Emergencias.getAll(),
       Storage.Documentos.getAll(),
     ]);
-    document.getElementById('stat-ats').textContent   = ats.length;
+    document.getElementById('stat-ats').textContent   = ats.length + parada.length;
     document.getElementById('stat-areas').textContent = areas.length;
     document.getElementById('stat-docs').textContent  = docs.length;
   } catch(e) {}

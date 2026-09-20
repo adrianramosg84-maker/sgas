@@ -32,6 +32,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { nombre, extintores, duchas, alarmas } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'nombre requerido' });
     const result = await pool.query(
       `UPDATE emergencias SET nombre=$1, extintores=$2, duchas=$3, alarmas=$4, updated_at=NOW()
        WHERE id=$5 RETURNING *`,
@@ -44,7 +45,8 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM emergencias WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM emergencias WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

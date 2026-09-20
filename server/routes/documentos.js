@@ -31,7 +31,8 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM documentos WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM documentos WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
