@@ -312,15 +312,15 @@ Views.inicio = async () => {
   setBreadcrumb([{ label: 'Inicio' }]);
   showView('inicio');
   try {
-    const [ats, parada, areas, docs] = await Promise.all([
+    const [ats, parada, areasResp, docsResp] = await Promise.all([
       Storage.ATS.getAll('ats'),
       Storage.ATS.getAll('parada'),
-      Storage.Emergencias.getAll(),
-      Storage.Documentos.getAll(),
+      Storage.Emergencias.getAll(1, 1),  // solo necesitamos el total
+      Storage.Documentos.getAll(1, 1),   // solo necesitamos el total
     ]);
     document.getElementById('stat-ats').textContent   = ats.length + parada.length;
-    document.getElementById('stat-areas').textContent = areas.length;
-    document.getElementById('stat-docs').textContent  = docs.length;
+    document.getElementById('stat-areas').textContent = areasResp.total ?? 0;
+    document.getElementById('stat-docs').textContent  = docsResp.total ?? 0;
   } catch(e) {}
 };
 
