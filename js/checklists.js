@@ -46,13 +46,22 @@ async function renderChecklistsHome() {
   grid.innerHTML = '';
   grid.style.display = '';
 
+  // Obtener conteos en un solo request (bulk) en lugar de N requests
+  let counts = {};
+  try {
+    if (Storage.getModo() === 'red') {
+      counts = await Storage.Checklists.countByCategoria();
+    } else {
+      // Modo local: contar desde IndexedDB
+      for (const cat of todasLasCats) {
+        const items = await Storage.Checklists.getByCategoria(cat.nombre);
+        counts[cat.nombre] = items.length;
+      }
+    }
+  } catch(e) {}
+
   for (const cat of todasLasCats) {
-    // Contar checklists de esta categoría
-    let count = 0;
-    try {
-      const items = await Storage.Checklists.getByCategoria(cat.nombre);
-      count = items.length;
-    } catch(e) {}
+    const count = counts[cat.nombre] || 0;
 
     const card = document.createElement('div');
     card.className = 'doc-card checklist-cat-card';
@@ -195,7 +204,7 @@ function cargarChecklist() {
       nombreSugerido,
       async (nombre) => {
         try {
-          const base64 = await fileToBase64Checklist(file);
+          const base64 = await fileToBase64(file);
           const doc = {
             nombre,
             fecha:     new Date().toLocaleDateString('es-AR'),
@@ -220,14 +229,7 @@ function cargarChecklist() {
   input.click();
 }
 
-function fileToBase64Checklist(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+/* ── Convertir File a base64 — centralizado en utils.js ── */
 
 /* ================================================================
    ABRIR EN NUEVA PESTAÑA

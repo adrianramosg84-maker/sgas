@@ -363,6 +363,13 @@ const Storage = (() => {
       if (modoRed) return apiFetch('/api/config', { method: 'POST', body: { key, value } });
       return idbSave('config', { key, value });
     },
+    // Guarda todas las claves en un solo request (bulk)
+    setBulk: async (entries) => {
+      // entries: [{ key, value }, ...]
+      if (modoRed) return apiFetch('/api/config/bulk', { method: 'POST', body: entries });
+      // Modo local: guardar cada clave en IndexedDB en paralelo
+      return Promise.all(entries.map(e => idbSave('config', { key: e.key, value: e.value })));
+    },
   };
 
   /* ================================================================
@@ -390,30 +397,6 @@ const Storage = (() => {
     remove: async (id) => {
       if (modoRed) return apiFetch(`/api/categorias/${id}`, { method: 'DELETE' });
       return idbRemove('categorias', id);
-    },
-  };
-
-  /* ================================================================
-     API PÚBLICA — EQUIPOS
-     ================================================================ */
-  const Equipos = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/equipos');
-      return []; // local: se maneja por separado en equipos.js con su propia DB
-    },
-    getById: async (id) => {
-      if (modoRed) return apiFetch(`/api/equipos/${id}`);
-      return null;
-    },
-    save: async (record) => {
-      if (modoRed) {
-        const r = await apiFetch('/api/equipos', { method: 'POST', body: record });
-        return r.id;
-      }
-      return null; // local: se maneja por separado en equipos.js
-    },
-    remove: async (id) => {
-      if (modoRed) return apiFetch(`/api/equipos/${id}`, { method: 'DELETE' });
     },
   };
 
@@ -452,6 +435,17 @@ const Storage = (() => {
       const rows = await idbGetAll('checklists');
       return rows.filter(r => (r.categoria || 'General') === cat);
     },
+    countByCategoria: async () => {
+      if (modoRed) return apiFetch('/api/checklists/count-by-categoria');
+      // Modo local: contar desde IndexedDB
+      const rows = await idbGetAll('checklists');
+      const counts = {};
+      rows.forEach(r => {
+        const cat = r.categoria || 'General';
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
+      return counts;
+    },
     getById: async (id) => {
       if (modoRed) return apiFetch(`/api/checklists/${id}`);
       return idbGet('checklists', id);
@@ -471,6 +465,6 @@ const Storage = (() => {
     },
   };
 
-  return { init, reconectar, usarSinConexion, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Equipos, Sheets, Checklists };
+  return { init, reconectar, usarSinConexion, getModo, mensajeError, ATS, Emergencias, Documentos, Config, Categorias, Sheets, Checklists };
 
 })();

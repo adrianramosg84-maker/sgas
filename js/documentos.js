@@ -98,15 +98,7 @@ function cargarDocumento() {
   input.click();
 }
 
-/* ── Convertir File a base64 ── */
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+/* ── Convertir File a base64 — centralizado en utils.js ── */
 
 /* ================================================================
    ABRIR DOCUMENTO

@@ -47,3 +47,21 @@ function abrirBase64EnPestana(base64, mimeType = 'application/pdf') {
 }
 
 window.abrirBase64EnPestana = abrirBase64EnPestana;
+
+/**
+ * Convierte un File a string base64 (data URL).
+ * Usado por documentos.js y checklists.js al cargar PDFs.
+ *
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+window.fileToBase64 = fileToBase64;

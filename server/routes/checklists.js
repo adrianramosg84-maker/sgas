@@ -20,6 +20,19 @@ router.get('/', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Conteo de checklists agrupado por categoría — evita N requests desde el home
+router.get('/count-by-categoria', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT categoria, COUNT(*)::int AS total FROM checklists GROUP BY categoria'
+    );
+    // Devuelve { "General": 3, "Seguridad": 5, ... }
+    const counts = {};
+    result.rows.forEach(r => { counts[r.categoria] = r.total; });
+    res.json(counts);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM checklists WHERE id = $1', [req.params.id]);

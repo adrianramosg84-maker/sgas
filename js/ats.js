@@ -282,14 +282,6 @@ async function eliminarFicha(id) {
   }
 }
 
-/* ================================================================
-   EXPORTAR PDF — jsPDF + autoTable (sin cortes de fila)
-   ================================================================ */
-
-function textoAPdf(str) {
-  if (!str) return '';
-  return String(str);
-}
 
 async function exportarPdfAts(id) {
   let ficha = AtsState.fichaActual;
@@ -336,9 +328,9 @@ async function exportarPdfAts(id) {
 
   // Tabla con autoTable
   const body = (ficha.filas || []).map((f) => [
-    textoAPdf(f.paso),
-    textoAPdf(f.peligro),
-    textoAPdf(f.control),
+    String(f.paso    || ''),
+    String(f.peligro || ''),
+    String(f.control || ''),
   ]);
 
   doc.autoTable({

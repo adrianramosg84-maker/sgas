@@ -60,9 +60,18 @@ router.delete('/:id', async (req, res) => {
     );
     if (catResult.rows[0]) {
       const { nombre, tipo } = catResult.rows[0];
-      await client.query(
-        'DELETE FROM ats WHERE categoria=$1 AND tipo=$2', [nombre, tipo]
-      );
+      // Cascade fichas ATS de esta categoría
+      if (tipo === 'ats' || tipo === 'parada') {
+        await client.query(
+          'DELETE FROM ats WHERE categoria=$1 AND tipo=$2', [nombre, tipo]
+        );
+      }
+      // Cascade checklists de esta categoría
+      if (tipo === 'checklist') {
+        await client.query(
+          'DELETE FROM checklists WHERE categoria=$1', [nombre]
+        );
+      }
     }
     await client.query('DELETE FROM categorias WHERE id = $1', [req.params.id]);
     await client.query('COMMIT');
