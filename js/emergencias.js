@@ -13,34 +13,34 @@ const EmergState = {
 /* ================================================================
    LISTA DE ÁREAS
    ================================================================ */
-async function renderEmergLista() {
+let _emergPagina = 1;
+const _emergLimit = 20;
+
+async function renderEmergLista(page = 1) {
+  _emergPagina = page;
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
     { label: 'Puntos de Emergencia' },
   ]);
 
-  let areas = [];
-  try { areas = await Storage.Emergencias.getAll(); } catch(e) {}
+  let resp = { data: [], total: 0, pages: 1, page: 1 };
+  try { resp = await Storage.Emergencias.getAll(page, _emergLimit); } catch(e) {}
+  const areas = resp.data || [];
 
   const container = document.getElementById('emerg-lista-container');
   container.innerHTML = '';
 
-  if (areas.length === 0) {
+  if (areas.length === 0 && page === 1) {
     container.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:40px">
       No hay áreas de emergencia. Creá la primera con <strong>+ Nueva Área</strong>.
     </div>`;
   } else {
     areas.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(area => {
-      const totalPuntos =
-        (area.extintores?.length || 0) +
-        (area.duchas?.length    || 0) +
-        (area.alarmas?.length   || 0);
-
       const card = document.createElement('div');
       card.className = 'emerg-area-card';
       card.innerHTML = `
         <div style="flex:1;min-width:0;cursor:pointer" onclick="abrirAreaDetalle(${area.id})">
-          <a href="#emergencias/${area.id}" 
+          <a href="#emergencias/${area.id}"
              onclick="event.preventDefault();abrirAreaDetalle(${area.id})"
              style="text-decoration:none;color:inherit;display:block">
             <div class="emerg-area-name">🏭 ${escapeHtml(area.nombre)}</div>
@@ -60,8 +60,16 @@ async function renderEmergLista() {
     });
   }
 
+  // Paginación
+  renderPaginacion('emerg-paginacion', resp, 'emergPaginaAnterior', 'emergPaginaSiguiente');
+
   showView('emergencias');
 }
+
+function emergPaginaAnterior() { renderEmergLista(_emergPagina - 1); }
+function emergPaginaSiguiente() { renderEmergLista(_emergPagina + 1); }
+window.emergPaginaAnterior  = emergPaginaAnterior;
+window.emergPaginaSiguiente = emergPaginaSiguiente;
 
 /* ================================================================
    DETALLE DE ÁREA
@@ -234,7 +242,7 @@ async function eliminarArea(id) {
   try {
     await Storage.Emergencias.remove(id);
     toast('Área eliminada');
-    renderEmergLista();
+    renderEmergLista(_emergPagina);
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
     toast(`Error al eliminar: ${texto}`, 'error');

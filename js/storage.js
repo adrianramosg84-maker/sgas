@@ -291,9 +291,15 @@ const Storage = (() => {
      API PÚBLICA — EMERGENCIAS
      ================================================================ */
   const Emergencias = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/emergencias');
-      return idbGetAll('emergencias');
+    getAll: async (page = 1, limit = 20) => {
+      if (modoRed) {
+        const resp = await apiFetch(`/api/emergencias?page=${page}&limit=${limit}`);
+        return resp; // { data, total, page, limit, pages }
+      }
+      const rows = await idbGetAll('emergencias');
+      const total = rows.length;
+      const start = (page - 1) * limit;
+      return { data: rows.slice(start, start + limit), total, page, limit, pages: Math.ceil(total / limit) };
     },
     getById: async (id) => {
       if (modoRed) return apiFetch(`/api/emergencias/${id}`);
@@ -322,9 +328,16 @@ const Storage = (() => {
      API PÚBLICA — DOCUMENTOS
      ================================================================ */
   const Documentos = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/documentos');
-      return idbGetAll('documentos');
+    getAll: async (page = 1, limit = 20) => {
+      if (modoRed) {
+        const resp = await apiFetch(`/api/documentos?page=${page}&limit=${limit}`);
+        return resp; // { data, total, page, limit, pages }
+      }
+      const rows = await idbGetAll('documentos');
+      const total = rows.length;
+      const sorted = [...rows].sort((a, b) => b.id - a.id);
+      const start = (page - 1) * limit;
+      return { data: sorted.slice(start, start + limit), total, page, limit, pages: Math.ceil(total / limit) };
     },
     getById: async (id) => {
       if (modoRed) return apiFetch(`/api/documentos/${id}`);
@@ -404,9 +417,15 @@ const Storage = (() => {
      API PÚBLICA — SHEETS (Google Sheets links)
      ================================================================ */
   const Sheets = {
-    getAll: async () => {
-      if (modoRed) return apiFetch('/api/sheets');
-      return idbGetAll('sheets');
+    getAll: async (page = 1, limit = 20) => {
+      if (modoRed) {
+        const resp = await apiFetch(`/api/sheets?page=${page}&limit=${limit}`);
+        return resp; // { data, total, page, limit, pages }
+      }
+      const rows = await idbGetAll('sheets');
+      const total = rows.length;
+      const start = (page - 1) * limit;
+      return { data: rows.slice(start, start + limit), total, page, limit, pages: Math.ceil(total / limit) };
     },
     save: async (record) => {
       if (modoRed) {

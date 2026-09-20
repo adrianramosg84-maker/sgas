@@ -9,19 +9,24 @@
 /* ================================================================
    RENDER VISTA
    ================================================================ */
-async function renderEquipos() {
+let _equiposPagina = 1;
+const _equiposLimit = 20;
+
+async function renderEquipos(page = 1) {
+  _equiposPagina = page;
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
     { label: 'Equipos / TAG' },
   ]);
 
-  let sheets = [];
-  try { sheets = await Storage.Sheets.getAll(); } catch(e) {}
+  let resp = { data: [], total: 0, pages: 1, page: 1 };
+  try { resp = await Storage.Sheets.getAll(page, _equiposLimit); } catch(e) {}
+  const sheets = resp.data || [];
 
   const lista = document.getElementById('sheets-lista');
   if (!lista) { showView('equipos'); return; }
 
-  if (!sheets || sheets.length === 0) {
+  if (sheets.length === 0 && page === 1) {
     lista.innerHTML = `
       <div style="text-align:center;padding:60px;color:var(--text-dim)">
         <div style="font-size:40px;margin-bottom:16px">📊</div>
@@ -49,8 +54,16 @@ async function renderEquipos() {
     });
   }
 
+  // Paginación
+  renderPaginacion('sheets-paginacion', resp, 'equiposPaginaAnterior', 'equiposPaginaSiguiente');
+
   showView('equipos');
 }
+
+function equiposPaginaAnterior()  { renderEquipos(_equiposPagina - 1); }
+function equiposPaginaSiguiente() { renderEquipos(_equiposPagina + 1); }
+window.equiposPaginaAnterior  = equiposPaginaAnterior;
+window.equiposPaginaSiguiente = equiposPaginaSiguiente;
 
 /* ================================================================
    AGREGAR SHEET

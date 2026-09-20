@@ -25,6 +25,28 @@ const FONT_MAP = {
   'Source Sans': "'Source Sans Pro', sans-serif",
 };
 
+// Fuentes que requieren Google Fonts para funcionar
+const GOOGLE_FONTS = {
+  'Inter':       'Inter',
+  'Roboto':      'Roboto',
+  'Open Sans':   'Open+Sans',
+  'Lato':        'Lato',
+  'Source Sans': 'Source+Sans+3',
+};
+
+// Carga dinámica de Google Fonts al cambiar fuente
+function cargarFuenteGoogle(nombre) {
+  const gFont = GOOGLE_FONTS[nombre];
+  if (!gFont) return; // Segoe UI es del sistema, no necesita carga
+  const id = `gfont-${nombre.replace(/\s/g, '-')}`;
+  if (document.getElementById(id)) return; // Ya está cargada
+  const link = document.createElement('link');
+  link.id   = id;
+  link.rel  = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${gFont}:wght@400;600;700&display=swap`;
+  document.head.appendChild(link);
+}
+
 const SIZE_MAP = {
   'pequeño': '12px',
   'normal':  '14px',
@@ -50,6 +72,7 @@ async function loadConfig() {
 
 function applyConfig(cfg) {
   const root = document.documentElement;
+  cargarFuenteGoogle(cfg.font); // carga Google Font si es necesario
   root.style.setProperty('--bg',       cfg.colorBg);
   root.style.setProperty('--sidebar',  cfg.colorSidebar);
   root.style.setProperty('--header',   cfg.colorHeader);

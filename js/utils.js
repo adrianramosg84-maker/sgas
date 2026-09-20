@@ -65,3 +65,56 @@ function fileToBase64(file) {
 }
 
 window.fileToBase64 = fileToBase64;
+
+/**
+ * Genera los controles de paginación HTML y los inserta en un contenedor.
+ * @param {string} containerId - ID del elemento donde insertar los controles
+ * @param {object} pag  - { page, pages, total }
+ * @param {string} fnAnterior - nombre de función global para página anterior
+ * @param {string} fnSiguiente - nombre de función global para página siguiente
+ */
+function renderPaginacion(containerId, pag, fnAnterior, fnSiguiente) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!pag || pag.pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 0">
+      <button class="btn btn-ghost btn-sm" ${pag.page <= 1 ? 'disabled' : ''}
+        onclick="${fnAnterior}()">‹ Anterior</button>
+      <span style="font-size:12px;color:var(--text-dim);padding:0 10px">
+        Página ${pag.page} de ${pag.pages} &nbsp;·&nbsp; ${pag.total} registros
+      </span>
+      <button class="btn btn-ghost btn-sm" ${pag.page >= pag.pages ? 'disabled' : ''}
+        onclick="${fnSiguiente}()">Siguiente ›</button>
+    </div>`;
+}
+
+window.renderPaginacion = renderPaginacion;
+
+/**
+ * Genera los controles de paginación HTML y los inserta en un contenedor.
+ * @param {string} containerId - ID del elemento donde insertar los controles
+ * @param {object} pag - { page, pages, total } retornado por el servidor
+ * @param {function} onPageChange - callback(nuevaPagina) al hacer clic
+ */
+function renderPaginacion(containerId, pag, onPageChange) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!pag || pag.pages <= 1) { el.innerHTML = ''; return; }
+
+  const btns = [];
+  // Anterior
+  btns.push(`<button class="btn btn-ghost btn-sm" ${pag.page <= 1 ? 'disabled' : ''}
+    onclick="(${onPageChange.name || '(p)=>{}'})(${pag.page - 1})">‹ Anterior</button>`);
+  // Info
+  btns.push(`<span style="font-size:12px;color:var(--text-dim);padding:0 10px">
+    Página ${pag.page} de ${pag.pages} &nbsp;·&nbsp; ${pag.total} registros
+  </span>`);
+  // Siguiente
+  btns.push(`<button class="btn btn-ghost btn-sm" ${pag.page >= pag.pages ? 'disabled' : ''}
+    onclick="(${onPageChange.name || '(p)=>{}'})(${pag.page + 1})">Siguiente ›</button>`);
+
+  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 0">${btns.join('')}</div>`;
+}
+
+window.renderPaginacion = renderPaginacion;

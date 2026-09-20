@@ -10,20 +10,24 @@
 /* ================================================================
    RENDER LISTA DE DOCUMENTOS
    ================================================================ */
-async function renderDocumentos() {
+let _docsPagina = 1;
+const _docsLimit = 20;
+
+async function renderDocumentos(page = 1) {
+  _docsPagina = page;
   setBreadcrumb([
     { label: 'Inicio', hash: 'inicio' },
     { label: 'Planos y Documentos' },
   ]);
 
-  let docs = [];
-  try { docs = await Storage.Documentos.getAll(); } catch(e) {}
+  let resp = { data: [], total: 0, pages: 1, page: 1 };
+  try { resp = await Storage.Documentos.getAll(page, _docsLimit); } catch(e) {}
+  const docs = resp.data || [];
 
   const grid = document.getElementById('doc-grid');
   grid.innerHTML = '';
 
-  // Ordenar por fecha descendente
-  docs.sort((a, b) => b.id - a.id).forEach(doc => {
+  docs.forEach(doc => {
     const card = document.createElement('div');
     card.className = 'doc-card';
     card.innerHTML = `
@@ -38,15 +42,25 @@ async function renderDocumentos() {
     grid.appendChild(card);
   });
 
-  // Tarjeta "Cargar documento"
-  const addCard = document.createElement('div');
-  addCard.className = 'doc-card doc-add';
-  addCard.innerHTML = `<div class="doc-icon">＋</div><div style="font-size:12px">Cargar documento</div>`;
-  addCard.addEventListener('click', cargarDocumento);
-  grid.appendChild(addCard);
+  // Tarjeta "Cargar documento" solo en la primera página
+  if (page === 1) {
+    const addCard = document.createElement('div');
+    addCard.className = 'doc-card doc-add';
+    addCard.innerHTML = `<div class="doc-icon">＋</div><div style="font-size:12px">Cargar documento</div>`;
+    addCard.addEventListener('click', cargarDocumento);
+    grid.appendChild(addCard);
+  }
+
+  // Paginación
+  renderPaginacion('doc-paginacion', resp, 'docsPaginaAnterior', 'docsPaginaSiguiente');
 
   showView('planos');
 }
+
+function docsPaginaAnterior() { renderDocumentos(_docsPagina - 1); }
+function docsPaginaSiguiente() { renderDocumentos(_docsPagina + 1); }
+window.docsPaginaAnterior = docsPaginaAnterior;
+window.docsPaginaSiguiente = docsPaginaSiguiente;
 
 /* ================================================================
    CARGAR PDF
@@ -127,7 +141,7 @@ async function eliminarDocumento(id) {
   try {
     await Storage.Documentos.remove(id);
     toast('Documento eliminado');
-    renderDocumentos();
+    renderDocumentos(_docsPagina);
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
     toast(`Error al eliminar: ${texto}`, 'error');

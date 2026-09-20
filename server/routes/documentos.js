@@ -5,8 +5,21 @@ const { validarId } = require('./helpers');
 
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nombre, fecha, mime_type, created_at FROM documentos ORDER BY id DESC');
-    res.json(result.rows);
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+    const [result, countResult] = await Promise.all([
+      pool.query('SELECT id, nombre, fecha, mime_type, created_at FROM documentos ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]),
+      pool.query('SELECT COUNT(*) FROM documentos'),
+    ]);
+    const total = parseInt(countResult.rows[0].count);
+    res.json({
+      data:  result.rows,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

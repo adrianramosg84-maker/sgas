@@ -53,11 +53,15 @@ async function renderChecklistsHome() {
     if (Storage.getModo() === 'red') {
       counts = await Storage.Checklists.countByCategoria();
     } else {
-      // Modo local: contar desde IndexedDB
-      for (const cat of todasLasCats) {
-        const items = await Storage.Checklists.getByCategoria(cat.nombre);
-        counts[cat.nombre] = items.length;
-      }
+      // Modo local: contar en paralelo con Promise.all en lugar de bucle secuencial
+      const resultados = await Promise.all(
+        todasLasCats.map(cat =>
+          Storage.Checklists.getByCategoria(cat.nombre)
+            .then(items => ({ nombre: cat.nombre, total: items.length }))
+            .catch(() => ({ nombre: cat.nombre, total: 0 }))
+        )
+      );
+      resultados.forEach(r => { counts[r.nombre] = r.total; });
     }
   } catch(e) {}
 
