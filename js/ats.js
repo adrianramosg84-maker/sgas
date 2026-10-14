@@ -260,7 +260,7 @@ async function guardarFicha() {
   ficha.filas         = leerFilasDOM();
   ficha.observaciones = document.getElementById('f-observaciones')?.value.trim() || '';
   ficha.codigo        = document.getElementById('f-codigo')?.value.trim() || '';
-  ficha.ot_tags       = leerOtTagsDOM();
+  ficha.ot_tags       = leerOtTagsDOM().filter(f => f.ot || f.tag); // al guardar, quitar vacías
   ficha.emergencia    = {
     reunion:    document.getElementById('f-emerg-reunion')?.value.trim()    || '',
     alarmas:    document.getElementById('f-emerg-alarmas')?.value.trim()    || '',
@@ -369,7 +369,7 @@ function leerOtTagsDOM() {
   document.querySelectorAll('#tbody-ottag tr').forEach(tr => {
     const ot  = tr.querySelector('[data-ot-col="ot"]')?.value.trim()  || '';
     const tag = tr.querySelector('[data-ot-col="tag"]')?.value.trim() || '';
-    if (ot || tag) filas.push({ ot, tag });
+    filas.push({ ot, tag }); // incluir filas vacías para no perder el conteo
   });
   return filas;
 }
