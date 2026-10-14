@@ -88,6 +88,8 @@ async function crearNuevaFicha(nombre) {
     ],
     observaciones: '',
     emergencia:  {},
+    codigo:      '',
+    ot_tags:     [],
   };
   AtsState.modo = 'edit';
   renderFicha();
@@ -140,6 +142,16 @@ function renderFicha() {
   const inputNombre = document.getElementById('f-nombre');
   inputNombre.value    = ficha.nombre || '';
   inputNombre.disabled = !editable;
+
+  // Campo código
+  const inputCodigo = document.getElementById('f-codigo');
+  if (inputCodigo) {
+    inputCodigo.value    = ficha.codigo || '';
+    inputCodigo.disabled = !editable;
+  }
+
+  // Tabla OT/TAG
+  renderTablaOtTag(ficha.ot_tags || [], editable);
 
   const obsEl = document.getElementById('f-observaciones');
   if (obsEl) {
@@ -247,6 +259,8 @@ async function guardarFicha() {
 
   ficha.filas         = leerFilasDOM();
   ficha.observaciones = document.getElementById('f-observaciones')?.value.trim() || '';
+  ficha.codigo        = document.getElementById('f-codigo')?.value.trim() || '';
+  ficha.ot_tags       = leerOtTagsDOM();
   ficha.emergencia    = {
     reunion:    document.getElementById('f-emerg-reunion')?.value.trim()    || '',
     alarmas:    document.getElementById('f-emerg-alarmas')?.value.trim()    || '',
@@ -285,6 +299,80 @@ async function eliminarFicha(id) {
   }
 }
 
+/* ================================================================
+   OT / TAG — Tabla dinámica (hasta 10 filas)
+   ================================================================ */
+function renderTablaOtTag(otTags, editable) {
+  const tbody  = document.getElementById('tbody-ottag');
+  const thead  = document.getElementById('thead-ottag');
+  const btnAdd = document.getElementById('btn-add-ottag');
+  const vacio  = document.getElementById('ottag-vacio');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  const tieneFilas = otTags && otTags.length > 0;
+
+  if (thead)  thead.style.display  = tieneFilas ? '' : 'none';
+  if (vacio)  vacio.style.display  = (!tieneFilas && !editable) ? '' : 'none';
+  if (btnAdd) btnAdd.style.display = editable ? '' : 'none';
+
+  (otTags || []).forEach((item, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff">
+        <input type="text" inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
+          data-ot-col="ot" value="${escapeHtml(item.ot||'')}"
+          ${editable?'':'disabled'}
+          style="width:100%;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
+          placeholder="0000000000" />
+      </td>
+      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff">
+        <input type="text" data-ot-col="tag" value="${escapeHtml(item.tag||'')}"
+          ${editable?'':'disabled'}
+          style="width:100%;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
+          placeholder="FV-0000" />
+      </td>
+      <td style="border:1px solid var(--border);background:var(--card);width:32px;text-align:center">
+        <button class="row-del-btn" style="${editable?'':'display:none'}"
+          onclick="eliminarFilaOtTag(${i})">✕</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function agregarFilaOtTag() {
+  const ficha = AtsState.fichaActual;
+  if (!ficha) return;
+  ficha.ot_tags = leerOtTagsDOM();
+  if (ficha.ot_tags.length >= 10) {
+    toast('Máximo 10 filas de OT/TAG', 'error');
+    return;
+  }
+  ficha.ot_tags.push({ ot: '', tag: '' });
+  renderTablaOtTag(ficha.ot_tags, true);
+  // Foco en el último input OT
+  const tbody = document.getElementById('tbody-ottag');
+  tbody.lastElementChild?.querySelector('input')?.focus();
+}
+
+function eliminarFilaOtTag(index) {
+  const ficha = AtsState.fichaActual;
+  if (!ficha) return;
+  ficha.ot_tags = leerOtTagsDOM();
+  ficha.ot_tags.splice(index, 1);
+  renderTablaOtTag(ficha.ot_tags, true);
+}
+
+function leerOtTagsDOM() {
+  const filas = [];
+  document.querySelectorAll('#tbody-ottag tr').forEach(tr => {
+    const ot  = tr.querySelector('[data-ot-col="ot"]')?.value.trim()  || '';
+    const tag = tr.querySelector('[data-ot-col="tag"]')?.value.trim() || '';
+    if (ot || tag) filas.push({ ot, tag });
+  });
+  return filas;
+}
 
 async function exportarPdfAts(id) {
   let ficha = AtsState.fichaActual;
@@ -510,7 +598,30 @@ async function exportarExcelAts(id) {
   agregarFila([`Tarea: ${ficha.nombre}`, '', ''], [sMeta, sMeta, sMeta], 18);
   ws.mergeCells(`A3:C3`);
 
-  /* ── Fila 4: Cabeceras (merge A-C vacío intermedio) ── */
+  /* ── Fila 4: Código y OT/TAG (si existen) ── */
+  let filaActual = 4; // próxima fila disponible (1-indexed) antes de cabeceras
+
+  if (ficha.codigo && ficha.codigo.trim()) {
+    agregarFila([`Código: ${ficha.codigo}`, '', ''], [sMeta, sMeta, sMeta], 16);
+    ws.mergeCells(`A${filaActual}:C${filaActual}`);
+    filaActual++;
+  }
+
+  if (ficha.ot_tags && ficha.ot_tags.length > 0) {
+    // Encabezado OT/TAG
+    const sOtHead = estilo(AZUL, BLANCOT, true, 'middle', 'center');
+    const sOtDato = estilo(GRIS, NEGRO, false, 'middle', 'left');
+    agregarFila(['OT', 'TAG Equipo', ''], [sOtHead, sOtHead, sOtHead], 16);
+    ws.mergeCells(`B${filaActual}:C${filaActual}`);
+    filaActual++;
+    ficha.ot_tags.forEach(item => {
+      agregarFila([item.ot || '', item.tag || '', ''], [sOtDato, sOtDato, sOtDato], 16);
+      ws.mergeCells(`B${filaActual}:C${filaActual}`);
+      filaActual++;
+    });
+  }
+
+  /* ── Cabeceras de tabla ── */
   agregarFila(
     [
       'Etapas de la Tarea\n(describa paso a paso las actividades)',
@@ -532,7 +643,7 @@ async function exportarExcelAts(id) {
     return resultado.length > 1 ? resultado : [texto.trim()];
   }
 
-  let rowIdx = 5; // siguiente fila disponible (1-indexed)
+  let rowIdx = filaActual + 1; // siguiente fila disponible después de cabeceras
 
   filas.forEach((f, fi) => {
     const sFilaDato = fi % 2 === 0 ? sDato : sDatoAlt;
@@ -624,5 +735,7 @@ window.exportarPdfAts   = exportarPdfAts;
 window.exportarExcelAts = exportarExcelAts;
 window.renderAtsLista   = renderAtsLista;
 window.crearNuevaFicha  = crearNuevaFicha;
+window.agregarFilaOtTag  = agregarFilaOtTag;
+window.eliminarFilaOtTag = eliminarFilaOtTag;
 
 /* ── escapeHtml se define en js/utils.js (cargado antes que este módulo) ── */

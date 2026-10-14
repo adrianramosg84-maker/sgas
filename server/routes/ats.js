@@ -49,15 +49,16 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { nombre, categoria, estado, filas, observaciones, tipo, emergencia } = req.body;
+    const { nombre, categoria, estado, filas, observaciones, tipo, emergencia, codigo, ot_tags } = req.body;
     if (!nombre || !categoria) return res.status(400).json({ error: 'nombre y categoria requeridos' });
     const result = await pool.query(
-      `INSERT INTO ats (nombre, categoria, estado, filas, observaciones, tipo, emergencia)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO ats (nombre, categoria, estado, filas, observaciones, tipo, emergencia, codigo, ot_tags)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [
         nombre, categoria, estado||'borrador',
         JSON.stringify(filas||[]), observaciones||'',
         tipo||'ats', JSON.stringify(emergencia||{}),
+        codigo||'', JSON.stringify(ot_tags||[]),
       ]
     );
     res.status(201).json(parseAts(result.rows[0]));
@@ -67,16 +68,17 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   if (!validarId(req, res)) return;
   try {
-    const { nombre, categoria, estado, filas, observaciones, tipo, emergencia } = req.body;
+    const { nombre, categoria, estado, filas, observaciones, tipo, emergencia, codigo, ot_tags } = req.body;
     if (!nombre || !categoria) return res.status(400).json({ error: 'nombre y categoria requeridos' });
     const result = await pool.query(
       `UPDATE ats SET nombre=$1, categoria=$2, estado=$3, filas=$4, observaciones=$5,
-       tipo=$6, emergencia=$7, updated_at=NOW()
-       WHERE id=$8 RETURNING *`,
+       tipo=$6, emergencia=$7, updated_at=NOW(), codigo=$8, ot_tags=$9
+       WHERE id=$10 RETURNING *`,
       [
         nombre, categoria, estado||'guardado',
         JSON.stringify(filas||[]), observaciones||'',
         tipo||'ats', JSON.stringify(emergencia||{}),
+        codigo||'', JSON.stringify(ot_tags||[]),
         req.params.id,
       ]
     );
@@ -99,6 +101,8 @@ function parseAts(row) {
     ...row,
     filas:      (() => { try { return JSON.parse(row.filas      || '[]'); } catch(_) { return []; } })(),
     emergencia: (() => { try { return JSON.parse(row.emergencia || '{}'); } catch(_) { return {}; } })(),
+    ot_tags:    (() => { try { return JSON.parse(row.ot_tags    || '[]'); } catch(_) { return []; } })(),
+    codigo:     row.codigo || '',
   };
 }
 
