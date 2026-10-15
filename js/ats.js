@@ -137,7 +137,8 @@ function renderFicha() {
     { label: ficha.nombre || 'Nueva Ficha' },
   ]);
 
-  document.getElementById('ficha-titulo').textContent = ficha.nombre || 'Nueva Ficha';
+  document.getElementById('ficha-titulo').textContent =
+    (ficha.codigo ? ficha.codigo + ' — ' : '') + (ficha.nombre || 'Nueva Ficha');
 
   const inputNombre = document.getElementById('f-nombre');
   inputNombre.value    = ficha.nombre || '';
@@ -387,7 +388,8 @@ async function exportarPdfAts(id) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const fechaHoy = new Date().toLocaleDateString('es-AR');
-  const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g,'-')}.pdf`;
+  const prefijoCodigo = ficha.codigo ? `${ficha.codigo}_` : '';
+  const nombreArchivo = `${prefijoCodigo}${ficha.nombre || 'ATS'}.pdf`;
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
@@ -516,7 +518,8 @@ async function exportarExcelAts(id) {
   }
 
   const fechaHoy      = new Date().toLocaleDateString('es-AR');
-  const nombreArchivo = `ATS_${ficha.categoria}_${fechaHoy.replace(/\//g, '-')}.xlsx`;
+  const prefijoCodigo = ficha.codigo ? `${ficha.codigo}_` : '';
+  const nombreArchivo = `${prefijoCodigo}${ficha.nombre || 'ATS'}.xlsx`;
   const filas         = ficha.filas || [];
 
   /* ── Helpers de estilo ── */
