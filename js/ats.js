@@ -640,8 +640,8 @@ async function exportarExcelAts(id) {
   // Soporta "1.", "1)", números con o sin espacio después
   function dividirNumerados(texto) {
     if (!texto || !texto.trim()) return [''];
-    // Separar por patrones tipo "1.", "2.", "10." al inicio de línea o después de salto
-    const partes = texto.split(/(?=\b\d+[.)]\s)/);
+    // Separar por "1." "1," "1)" seguido de espacio — al inicio o en medio del texto
+    const partes = texto.split(/(?=\d+[.,)]\s)/);
     const resultado = partes.map(p => p.trim()).filter(p => p.length > 0);
     return resultado.length > 1 ? resultado : [texto.trim()];
   }
