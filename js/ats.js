@@ -45,7 +45,20 @@ async function renderAtsLista(categoria, tipo = 'ats') {
       No hay fichas en esta categoría. Creá la primera con <strong>＋ Nueva Ficha</strong>.
     </td></tr>`;
   } else {
+    // Ordenar por código alfanuméricamente (fichas sin código van al final)
+    fichas.sort((a, b) => {
+      const ca = (a.codigo || '').trim();
+      const cb = (b.codigo || '').trim();
+      if (!ca && !cb) return 0;
+      if (!ca) return 1;
+      if (!cb) return -1;
+      return ca.localeCompare(cb, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     fichas.forEach(ficha => {
+      const titulo = ficha.codigo
+        ? `${escapeHtml(ficha.codigo)} — ${escapeHtml(ficha.nombre)}`
+        : escapeHtml(ficha.nombre);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
@@ -54,7 +67,7 @@ async function renderAtsLista(categoria, tipo = 'ats') {
              style="color:var(--text);text-decoration:none;cursor:pointer"
              onmouseover="this.style.color='var(--accent)'"
              onmouseout="this.style.color='var(--text)'"
-          >${escapeHtml(ficha.nombre)}</a>
+          >${titulo}</a>
         </td>
         <td><span class="badge ${ficha.estado === 'guardado' ? 'badge-saved' : 'badge-draft'}">
           ${ficha.estado === 'guardado' ? 'Guardado' : 'Borrador'}
