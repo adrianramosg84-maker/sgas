@@ -36,6 +36,7 @@ async function renderAtsLista(categoria, tipo = 'ats') {
   // Cargar fichas filtradas por categoria Y tipo
   let fichas = [];
   try { fichas = await Storage.ATS.getByCategoria(categoria, AtsState.tipo); } catch(e) {}
+  AtsState._fichasLista = fichas; // guardamos para ZIP
 
   const tbody = document.getElementById('ats-lista-tbody');
   tbody.innerHTML = '';
@@ -731,6 +732,280 @@ async function exportarExcelAts(id) {
   toast('✓ Excel descargado');
 }
 
+/* ================================================================
+   DESCARGAR ZIP — PDF o EXCEL de todas las fichas de la categoría
+   ================================================================ */
+
+function nombreArchivoFicha(ficha, ext) {
+  const codigo = (ficha.codigo || '').trim();
+  const nombre = (ficha.nombre || 'ATS').trim()
+    .replace(/[/\\:*?"<>|]/g, '-'); // caracteres inválidos en nombres de archivo
+  return codigo ? `${codigo}_${nombre}.${ext}` : `${nombre}.${ext}`;
+}
+
+async function descargarZipPdf() {
+  if (!window.JSZip) {
+    toast('Librería ZIP no cargada, esperá un momento', 'error');
+    return;
+  }
+  if (!window.jspdf) {
+    toast('Librería PDF no cargada, esperá un momento', 'error');
+    return;
+  }
+
+  const fichas = AtsState._fichasLista;
+  if (!fichas || fichas.length === 0) {
+    toast('No hay fichas para descargar', 'error');
+    return;
+  }
+
+  toast(`⏳ Generando ZIP con ${fichas.length} PDF${fichas.length > 1 ? 's' : ''}...`);
+
+  const zip = new JSZip();
+
+  for (const item of fichas) {
+    try {
+      const ficha = await Storage.ATS.getById(item.id);
+      if (!ficha) continue;
+      const pdfBytes = await generarPdfBytes(ficha);
+      zip.file(nombreArchivoFicha(ficha, 'pdf'), pdfBytes);
+    } catch(e) { console.error('Error generando PDF para', item.nombre, e); }
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${AtsState.categoria}_PDF.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('✓ ZIP PDF descargado');
+}
+
+async function descargarZipExcel() {
+  if (!window.JSZip) {
+    toast('Librería ZIP no cargada, esperá un momento', 'error');
+    return;
+  }
+  if (!window.ExcelJS) {
+    toast('Librería Excel no cargada, esperá un momento', 'error');
+    return;
+  }
+
+  const fichas = AtsState._fichasLista;
+  if (!fichas || fichas.length === 0) {
+    toast('No hay fichas para descargar', 'error');
+    return;
+  }
+
+  toast(`⏳ Generando ZIP con ${fichas.length} Excel${fichas.length > 1 ? 's' : ''}...`);
+
+  const zip = new JSZip();
+
+  for (const item of fichas) {
+    try {
+      const ficha = await Storage.ATS.getById(item.id);
+      if (!ficha) continue;
+      const xlsxBytes = await generarExcelBytes(ficha);
+      zip.file(nombreArchivoFicha(ficha, 'xlsx'), xlsxBytes);
+    } catch(e) { console.error('Error generando Excel para', item.nombre, e); }
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${AtsState.categoria}_Excel.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('✓ ZIP Excel descargado');
+}
+
+// Genera un PDF en memoria y retorna los bytes (Uint8Array)
+async function generarPdfBytes(ficha) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const fechaHoy = new Date().toLocaleDateString('es-AR');
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  const dibujarHeader = (pg) => {
+    doc.setFillColor(45, 74, 110);
+    doc.rect(0, 0, pageW, pg === 1 ? 14 : 9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(pg === 1 ? 10 : 7.5);
+    doc.text('SGAS', 6, pg === 1 ? 9 : 6);
+    doc.setFontSize(pg === 1 ? 8.5 : 7);
+    doc.text('ANÁLISIS DE TRABAJO SEGURO (ATS)', pageW / 2, pg === 1 ? 9 : 6, { align: 'center' });
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(fechaHoy, pageW - 6, pg === 1 ? 9 : 6, { align: 'right' });
+  };
+
+  dibujarHeader(1);
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Categoría: ${ficha.categoria}`, 6, 19);
+  doc.setFont('helvetica', 'bold');
+  const tituloCompleto = (ficha.codigo ? `${ficha.codigo} — ` : '') + ficha.nombre;
+  const nombreLines = doc.splitTextToSize(`Tarea: ${tituloCompleto}`, pageW - 12);
+  doc.text(nombreLines, 6, 24);
+
+  const body = (ficha.filas || []).map(f => [
+    String(f.paso || ''), String(f.peligro || ''), String(f.control || ''),
+  ]);
+
+  doc.autoTable({
+    startY: 29,
+    head: [['PASOS DE LA TAREA', 'PELIGROS IDENTIFICADOS', 'MEDIDAS DE CONTROL']],
+    body,
+    styles: { fontSize: 6.5, cellPadding: { top: 1.5, right: 2.5, bottom: 1.5, left: 2.5 }, valign: 'top', lineColor: [180,180,180], lineWidth: 0.2, overflow: 'linebreak', font: 'helvetica' },
+    headStyles: { fillColor: [45,74,110], textColor: [255,255,255], fontStyle: 'bold', fontSize: 6.5, valign: 'middle', halign: 'left', cellPadding: { top: 2, right: 2.5, bottom: 2, left: 2.5 } },
+    tableWidth: 'auto',
+    alternateRowStyles: { fillColor: [248,250,252] },
+    rowPageBreak: 'auto',
+    showHead: 'firstPage',
+    margin: { top: 12, left: 6, right: 6, bottom: 10 },
+    didDrawPage: (data) => {
+      const pg = doc.internal.getCurrentPageInfo().pageNumber;
+      if (pg > 1) dibujarHeader(pg);
+      doc.setTextColor(120,120,120);
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${ficha.categoria} — ${ficha.nombre}`, 6, pageH - 3.5);
+      doc.text(`Página ${pg}`, pageW / 2, pageH - 3.5, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      const estadoColor = ficha.estado === 'guardado' ? [45,106,79] : [181,86,10];
+      doc.setTextColor(...estadoColor);
+      const estadoTexto = ficha.estado === 'guardado' ? 'ESTADO: GUARDADO' : 'ESTADO: BORRADOR';
+      doc.text(estadoTexto, pageW - 6, pageH - 3.5, { align: 'right' });
+    },
+  });
+
+  if (ficha.observaciones) {
+    const finalY = (doc.lastAutoTable?.finalY || 29) + 4;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(0,0,0);
+    doc.text('Observaciones / Recomendaciones:', 6, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    const lines = doc.splitTextToSize(ficha.observaciones, pageW - 12);
+    doc.text(lines, 6, finalY + 4);
+  }
+
+  return doc.output('arraybuffer');
+}
+
+// Genera un Excel en memoria y retorna los bytes (ArrayBuffer)
+async function generarExcelBytes(ficha) {
+  const EJS = window.ExcelJS;
+  const wb  = new EJS.Workbook();
+  wb.creator = 'SGAS';
+  const ws  = wb.addWorksheet('ATS', {
+    views: [{ showGridLines: false }],
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+  });
+  ws.columns = [{ width: 38 }, { width: 42 }, { width: 42 }];
+
+  const fechaHoy = new Date().toLocaleDateString('es-AR');
+
+  // Reutiliza los mismos estilos que exportarExcelAts
+  const AZUL = { argb: 'FF2D4A6E' }, VERDE = { argb: 'FF4A6741' };
+  const GRIS = { argb: 'FFEEF2F7' }, GRIS2 = { argb: 'FFE8EDF5' };
+  const BLANCO = { argb: 'FFFFFFFF' }, GRISF = { argb: 'FFF8FAFB' };
+  const AMARILL = { argb: 'FFFFFBEA' }, NEGRO = { argb: 'FF1A1A1A' };
+  const BLANCOT = { argb: 'FFFFFFFF' };
+  const borde = { top: { style:'thin', color:{argb:'FFB4B4B4'} }, left: { style:'thin', color:{argb:'FFB4B4B4'} }, bottom: { style:'thin', color:{argb:'FFB4B4B4'} }, right: { style:'thin', color:{argb:'FFB4B4B4'} } };
+  const estilo = (fgColor, fontColor, bold=false, vAlign='middle', hAlign='left') => ({
+    font: { name:'Calibri', size:10, bold, color:{argb:fontColor.argb} },
+    fill: { type:'pattern', pattern:'solid', fgColor },
+    alignment: { vertical:vAlign, horizontal:hAlign, wrapText:true },
+    border: borde,
+  });
+  const sTitulo = estilo(AZUL,BLANCOT,true,'middle','center');
+  const sMeta   = estilo(GRIS,NEGRO,false,'middle','left');
+  const sCab    = estilo(AZUL,BLANCOT,true,'middle','center');
+  const sPaso   = estilo(GRIS2,NEGRO,true,'middle','left');
+  const sDato   = estilo(BLANCO,NEGRO,false,'top','left');
+  const sDatoA  = estilo(GRISF,NEGRO,false,'top','left');
+  const sObsH   = estilo(VERDE,BLANCOT,true,'middle','left');
+  const sObsB   = estilo(AMARILL,NEGRO,false,'top','left');
+
+  const addFila = (vals, ests, h=18) => { const row=ws.addRow(vals); row.height=h; ests.forEach((s,i)=>{ if(s) row.getCell(i+1).style=s; }); return row; };
+
+  const tituloCompleto = (ficha.codigo ? `${ficha.codigo} — ` : '') + ficha.nombre;
+  addFila(['ANÁLISIS DE TRABAJO SEGURO (ATS)','',''], [sTitulo,sTitulo,sTitulo], 28);
+  ws.mergeCells('A1:C1');
+  addFila([`Categoría: ${ficha.categoria}`, `Fecha: ${fechaHoy}`, `Estado: ${ficha.estado==='guardado'?'Guardado':'Borrador'}`], [sMeta,sMeta,sMeta], 18);
+  addFila([`Tarea: ${tituloCompleto}`,'',''], [sMeta,sMeta,sMeta], 18);
+  ws.mergeCells('A3:C3');
+
+  let filaActual = 4;
+  if (ficha.codigo && ficha.codigo.trim()) {
+    addFila([`Código: ${ficha.codigo}`,'',''], [sMeta,sMeta,sMeta], 16);
+    ws.mergeCells(`A${filaActual}:C${filaActual}`);
+    filaActual++;
+  }
+  if (ficha.ot_tags && ficha.ot_tags.length > 0) {
+    const sOtH = estilo(AZUL,BLANCOT,true,'middle','center');
+    const sOtD = estilo(GRIS,NEGRO,false,'middle','left');
+    addFila(['OT','TAG Equipo',''], [sOtH,sOtH,sOtH], 16);
+    ws.mergeCells(`B${filaActual}:C${filaActual}`); filaActual++;
+    ficha.ot_tags.forEach(item => {
+      addFila([item.ot||'', item.tag||'',''], [sOtD,sOtD,sOtD], 16);
+      ws.mergeCells(`B${filaActual}:C${filaActual}`); filaActual++;
+    });
+  }
+
+  addFila(['Etapas de la Tarea\n(describa paso a paso las actividades)','Peligros / Consecuencias\n(Escriba lo que puede suceder si no se implementan controles)','Medidas de control requeridas'], [sCab,sCab,sCab], 36);
+
+  const dividir = (txt) => {
+    if (!txt || !txt.trim()) return [''];
+    const p = txt.split(/(?=\d+[.,)]\s)/);
+    const r = p.map(x=>x.trim()).filter(x=>x.length>0);
+    return r.length>1 ? r : [txt.trim()];
+  };
+
+  let rowIdx = filaActual + 1;
+  (ficha.filas||[]).forEach((f, fi) => {
+    const sF = fi%2===0 ? sDato : sDatoA;
+    const paso = (f.paso||'').trim();
+    const peligros = dividir(f.peligro);
+    const medidas  = dividir(f.control);
+    const cant = Math.max(peligros.length, medidas.length);
+    const filaIni = rowIdx;
+    for (let i=0; i<cant; i++) {
+      const row = ws.addRow([i===0?paso:'', peligros[i]||'', medidas[i]||'']);
+      const ml = Math.max((peligros[i]||'').length, (medidas[i]||'').length);
+      row.height = ml>200?90:ml>100?60:40;
+      row.getCell(1).style = sPaso;
+      row.getCell(2).style = sF;
+      row.getCell(3).style = sF;
+      rowIdx++;
+    }
+    if (cant>1) ws.mergeCells(`A${filaIni}:A${filaIni+cant-1}`);
+  });
+
+  if (ficha.observaciones && ficha.observaciones.trim()) {
+    ws.addRow(['','','']).height = 6; rowIdx++;
+    const hRow = ws.addRow(['Observaciones / Recomendaciones:','','']);
+    hRow.height=20; hRow.getCell(1).style=sObsH; hRow.getCell(2).style=sObsH; hRow.getCell(3).style=sObsH;
+    ws.mergeCells(`A${rowIdx}:C${rowIdx}`); rowIdx++;
+    const oRow = ws.addRow([ficha.observaciones,'','']);
+    oRow.height=60; oRow.getCell(1).style=sObsB; oRow.getCell(2).style=sObsB; oRow.getCell(3).style=sObsB;
+    ws.mergeCells(`A${rowIdx}:C${rowIdx}`);
+  }
+
+  return wb.xlsx.writeBuffer();
+}
+
 /* ── Registrar vistas en el router ── */
 Views.atsLista = (cat, tipo) => renderAtsLista(cat, tipo || 'ats');
 Views.genericoLista = (slug, label) => {
@@ -753,5 +1028,7 @@ window.renderAtsLista   = renderAtsLista;
 window.crearNuevaFicha  = crearNuevaFicha;
 window.agregarFilaOtTag  = agregarFilaOtTag;
 window.eliminarFilaOtTag = eliminarFilaOtTag;
+window.descargarZipPdf   = descargarZipPdf;
+window.descargarZipExcel = descargarZipExcel;
 
 /* ── escapeHtml se define en js/utils.js (cargado antes que este módulo) ── */
