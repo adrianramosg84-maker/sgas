@@ -654,8 +654,10 @@ async function exportarExcelAts(id) {
   // Soporta "1.", "1)", números con o sin espacio después
   function dividirNumerados(texto) {
     if (!texto || !texto.trim()) return [''];
-    // Separar solo por número seguido de punto y espacio: "1. ", "2. ", "10. "
-    const partes = texto.split(/(?=\d+\.\s)/);
+    // Separar cuando el número está precedido por inicio, salto de línea o espacio
+    // Nunca parte en medio de un número (10. 11. 23. 30. funcionan bien)
+    // No parte decimales como 13.41 porque después del punto no hay espacio
+    const partes = texto.split(/(?:^|\n| )(?=\d{1,2}\. )/m);
     const resultado = partes.map(p => p.trim()).filter(p => p.length > 0);
     return resultado.length > 1 ? resultado : [texto.trim()];
   }
@@ -968,7 +970,7 @@ async function generarExcelBytes(ficha) {
 
   const dividir = (txt) => {
     if (!txt || !txt.trim()) return [''];
-    const p = txt.split(/(?=\d+\.\s)/);
+    const p = txt.split(/(?:^|\n| )(?=\d{1,2}\. )/m);
     const r = p.map(x=>x.trim()).filter(x=>x.length>0);
     return r.length>1 ? r : [txt.trim()];
   };
