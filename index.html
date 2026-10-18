@@ -146,21 +146,20 @@
   <!-- /sidebar -->
 
   <!-- ══ MAIN ══ -->
-  <main>
-    <div class="breadcrumb" id="breadcrumb">Inicio</div>
+  <main id="main-content" style="position:relative">
+    <!-- Overlay imagen de fondo (cubre todo el main excepto sidebar) -->
+    <div id="dash-bg-overlay" style="display:none;position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;pointer-events:none"></div>
+    <div class="breadcrumb" id="breadcrumb" style="position:relative;z-index:1">Inicio</div>
 
-    <div class="content">
+    <div class="content" style="position:relative;z-index:1">
 
       <!-- ════════════════════════════
            VISTA: INICIO
       ════════════════════════════ -->
-      <div class="view active" id="view-inicio" style="position:relative">
-        <!-- Overlay de imagen de fondo -->
-        <div id="dash-bg-overlay" style="display:none;position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;border-radius:inherit;pointer-events:none"></div>
-        <div style="position:relative;z-index:1">
+      <div class="view active" id="view-inicio">
         <div class="view-header">
           <div class="view-title">Panel de Control</div>
-          <button class="btn btn-ghost btn-sm" onclick="abrirPersonalizarDashboard()" title="Personalizar accesos rápidos">⚙️ Personalizar</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirPersonalizarDashboard()" title="Personalizar accesos rápidos" style="background:var(--accent);color:#fff;font-weight:700">⚙️ Personalizar</button>
         </div>
 
         <!-- Accesos rápidos -->
@@ -189,7 +188,6 @@
           </div>
           <div id="dash-historial"></div>
         </div>
-        </div><!-- /z-index wrapper -->
       </div>
 
       <!-- ════════════════════════════
