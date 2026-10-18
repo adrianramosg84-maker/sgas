@@ -461,13 +461,13 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
   border: 1px solid var(--border);
   padding: 5px 7px;
   vertical-align: top;
-  background: #ffffff;
+  background: #f0f2f5;
 }
 .table-ats .td-num { background: var(--card); }
 .table-ats .td-del { background: var(--card); }
 .table-ats textarea {
   width: 100%;
-  background: #ffffff;
+  background: #f0f2f5;
   border: none;
   color: #1a1a1a;
   font-size: 13px;
@@ -477,9 +477,9 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
   line-height: 1.6;
   padding: 4px;
 }
-.table-ats textarea:focus { outline: none; background: #f0f8ff; }
+.table-ats textarea:focus { outline: none; background: #e8f4ff; }
 .table-ats textarea:disabled {
-  background: #f5f5f5;
+  background: #e8eaed;
   color: #222;
   cursor: default;
   opacity: 1;
