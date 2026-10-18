@@ -315,7 +315,7 @@ async function eliminarFicha(id) {
 }
 
 /* ================================================================
-   OT / TAG — Tabla dinámica (hasta 10 filas)
+   OT / TAG — Tabla dinámica 4 columnas (2 pares por fila, hasta 20)
    ================================================================ */
 function renderTablaOtTag(otTags, editable) {
   const tbody  = document.getElementById('tbody-ottag');
@@ -326,49 +326,95 @@ function renderTablaOtTag(otTags, editable) {
 
   tbody.innerHTML = '';
 
-  const tieneFilas = otTags && otTags.length > 0;
+  const items = otTags || [];
+  const tieneFilas = items.length > 0;
 
-  if (thead)  thead.style.display  = tieneFilas ? '' : 'none';
+  // Cabecera: 4 columnas (OT | TAG | OT | TAG) + columna acciones
+  if (thead) {
+    thead.style.display = tieneFilas ? '' : 'none';
+    thead.innerHTML = `<tr>
+      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border);width:24%">OT (10 dígitos)</th>
+      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border);width:26%">TAG Equipo</th>
+      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border);width:24%">OT (10 dígitos)</th>
+      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border)">TAG Equipo</th>
+    </tr>`;
+  }
+
   if (vacio)  vacio.style.display  = (!tieneFilas && !editable) ? '' : 'none';
-  if (btnAdd) btnAdd.style.display = editable ? '' : 'none';
+  if (btnAdd) {
+    btnAdd.style.display = editable ? '' : 'none';
+    btnAdd.textContent   = items.length >= 20 ? '✓ Máximo 20' : '＋ Agregar';
+    btnAdd.disabled      = items.length >= 20;
+  }
 
-  (otTags || []).forEach((item, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff">
-        <input type="text" inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
-          data-ot-col="ot" value="${escapeHtml(item.ot||'')}"
+  // Renderizar de a 2 entradas por fila (par izquierdo + par derecho)
+  for (let i = 0; i < items.length; i += 2) {
+    const izq = items[i];
+    const der = items[i + 1]; // puede ser undefined
+
+    const tdIzq = `
+      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff;width:24%">
+        <input type="text" inputmode="numeric" maxlength="10"
+          data-ot-col="ot" data-ot-idx="${i}" value="${escapeHtml(izq.ot||'')}"
           ${editable?'':'disabled'}
           style="width:100%;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
           placeholder="0000000000" />
       </td>
-      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff">
-        <input type="text" data-ot-col="tag" value="${escapeHtml(item.tag||'')}"
-          ${editable?'':'disabled'}
-          style="width:100%;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
-          placeholder="FV-0000" />
-      </td>
-      <td style="border:1px solid var(--border);background:var(--card);width:32px;text-align:center">
-        <button class="row-del-btn" style="${editable?'':'display:none'}"
-          onclick="eliminarFilaOtTag(${i})">✕</button>
+      <td style="border:1px solid var(--border);padding:5px 7px;background:#fff;position:relative">
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="text" data-ot-col="tag" data-ot-idx="${i}" value="${escapeHtml(izq.tag||'')}"
+            ${editable?'':'disabled'}
+            style="flex:1;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
+            placeholder="FV-0000" />
+          ${editable ? `<button class="row-del-btn" onclick="eliminarFilaOtTag(${i})" title="Eliminar">✕</button>` : ''}
+        </div>
       </td>`;
+
+    let tdDer = '';
+    if (der) {
+      tdDer = `
+        <td style="border:1px solid var(--border);padding:5px 7px;background:#fff;width:24%">
+          <input type="text" inputmode="numeric" maxlength="10"
+            data-ot-col="ot" data-ot-idx="${i+1}" value="${escapeHtml(der.ot||'')}"
+            ${editable?'':'disabled'}
+            style="width:100%;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
+            placeholder="0000000000" />
+        </td>
+        <td style="border:1px solid var(--border);padding:5px 7px;background:#fff">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="text" data-ot-col="tag" data-ot-idx="${i+1}" value="${escapeHtml(der.tag||'')}"
+              ${editable?'':'disabled'}
+              style="flex:1;background:#fff;border:none;color:#1a1a1a;font-size:13px;font-family:var(--font)"
+              placeholder="FV-0000" />
+            ${editable ? `<button class="row-del-btn" onclick="eliminarFilaOtTag(${i+1})" title="Eliminar">✕</button>` : ''}
+          </div>
+        </td>`;
+    } else {
+      // Celda derecha vacía cuando hay número impar de entradas
+      tdDer = `
+        <td style="border:1px solid var(--border);background:var(--card);opacity:.3"></td>
+        <td style="border:1px solid var(--border);background:var(--card);opacity:.3"></td>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = tdIzq + tdDer;
     tbody.appendChild(tr);
-  });
+  }
 }
 
 function agregarFilaOtTag() {
   const ficha = AtsState.fichaActual;
   if (!ficha) return;
   ficha.ot_tags = leerOtTagsDOM();
-  if (ficha.ot_tags.length >= 10) {
-    toast('Máximo 10 filas de OT/TAG', 'error');
+  if (ficha.ot_tags.length >= 20) {
+    toast('Máximo 20 entradas de OT/TAG', 'error');
     return;
   }
   ficha.ot_tags.push({ ot: '', tag: '' });
   renderTablaOtTag(ficha.ot_tags, true);
-  // Foco en el último input OT
-  const tbody = document.getElementById('tbody-ottag');
-  tbody.lastElementChild?.querySelector('input')?.focus();
+  // Foco en el último input OT agregado
+  const inputs = document.querySelectorAll('#tbody-ottag [data-ot-col="ot"]');
+  inputs[inputs.length - 1]?.focus();
 }
 
 function eliminarFilaOtTag(index) {
@@ -378,15 +424,26 @@ function eliminarFilaOtTag(index) {
   ficha.ot_tags.splice(index, 1);
   renderTablaOtTag(ficha.ot_tags, true);
 }
+  if (!ficha) return;
+  ficha.ot_tags = leerOtTagsDOM();
+  ficha.ot_tags.splice(index, 1);
+  renderTablaOtTag(ficha.ot_tags, true);
+}
 
 function leerOtTagsDOM() {
   const filas = [];
-  document.querySelectorAll('#tbody-ottag tr').forEach(tr => {
-    const ot  = tr.querySelector('[data-ot-col="ot"]')?.value.trim()  || '';
-    const tag = tr.querySelector('[data-ot-col="tag"]')?.value.trim() || '';
-    filas.push({ ot, tag }); // incluir filas vacías para no perder el conteo
+  // Leer por índice explícito en data-ot-idx para no depender del orden del DOM
+  const otInputs = document.querySelectorAll('#tbody-ottag [data-ot-col="ot"]');
+  otInputs.forEach(input => {
+    const idx = parseInt(input.dataset.otIdx);
+    const tag = document.querySelector(`#tbody-ottag [data-ot-col="tag"][data-ot-idx="${idx}"]`);
+    filas[idx] = {
+      ot:  input.value.trim()       || '',
+      tag: tag?.value.trim()        || '',
+    };
   });
-  return filas;
+  // Filtrar posibles huecos undefined
+  return filas.filter(f => f !== undefined && f !== null);
 }
 
 async function exportarPdfAts(id) {
@@ -625,13 +682,13 @@ async function exportarExcelAts(id) {
   }
 
   if (ficha.ot_tags && ficha.ot_tags.length > 0) {
-    // Encabezado OT/TAG
     const sOtHead = estilo(AZUL, BLANCOT, true, 'middle', 'center');
     const sOtDato = estilo(GRIS, NEGRO, false, 'middle', 'left');
+    // Cabecera: OT | TAG (siempre 2 columnas en el Excel para mantener el formato)
     agregarFila(['OT', 'TAG Equipo', ''], [sOtHead, sOtHead, sOtHead], 16);
     ws.mergeCells(`B${filaActual}:C${filaActual}`);
     filaActual++;
-    ficha.ot_tags.forEach(item => {
+    ficha.ot_tags.filter(f => f.ot || f.tag).forEach(item => {
       agregarFila([item.ot || '', item.tag || '', ''], [sOtDato, sOtDato, sOtDato], 16);
       ws.mergeCells(`B${filaActual}:C${filaActual}`);
       filaActual++;
@@ -960,7 +1017,7 @@ async function generarExcelBytes(ficha) {
     const sOtD = estilo(GRIS,NEGRO,false,'middle','left');
     addFila(['OT','TAG Equipo',''], [sOtH,sOtH,sOtH], 16);
     ws.mergeCells(`B${filaActual}:C${filaActual}`); filaActual++;
-    ficha.ot_tags.forEach(item => {
+    ficha.ot_tags.filter(f => f.ot || f.tag).forEach(item => {
       addFila([item.ot||'', item.tag||'',''], [sOtD,sOtD,sOtD], 16);
       ws.mergeCells(`B${filaActual}:C${filaActual}`); filaActual++;
     });
