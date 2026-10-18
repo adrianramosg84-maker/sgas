@@ -235,21 +235,23 @@
 
         <div class="ficha-block">
           <h2>Datos de la ficha</h2>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start">
 
-            <!-- Columna izquierda: nombre -->
+            <!-- Columna izquierda: código (fijo, angosto) -->
+            <div class="field-group">
+              <label for="f-codigo">Código (opcional)</label>
+              <input id="f-codigo" type="text" placeholder="Ej: 001-AT-APTIM-SS.GG" />
+            </div>
+
+            <!-- Columna derecha: nombre (ocupa todo el espacio restante) -->
             <div class="field-group">
               <label for="f-nombre">Nombre del ATS</label>
               <input id="f-nombre" type="text"
                      placeholder="Ej: Aplicación de pintura epóxica en tanques T-14" />
             </div>
 
-            <!-- Columna derecha: código + tabla OT/TAG -->
-            <div>
-              <div class="field-group" style="margin-bottom:14px">
-                <label for="f-codigo">Código (opcional)</label>
-                <input id="f-codigo" type="text" placeholder="Ej: ATS-2026-001" style="max-width:260px" />
-              </div>
+          </div>
+        </div>
 
               <div>
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -275,6 +277,22 @@
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- Bloque OT / TAG -->
+        <div class="ficha-block">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <h2 style="margin:0">OT / TAG del Equipo</h2>
+            <button class="btn btn-ghost btn-sm" id="btn-add-ottag" onclick="agregarFilaOtTag()"
+                    style="display:none">＋ Agregar</button>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px" id="tabla-ottag">
+            <thead id="thead-ottag" style="display:none"></thead>
+            <tbody id="tbody-ottag"></tbody>
+          </table>
+          <div id="ottag-vacio" style="font-size:12px;color:var(--text-dim);padding:4px 0;display:none">
+            Sin OT/TAG cargados.
           </div>
         </div>
 
