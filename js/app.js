@@ -315,6 +315,8 @@ function mostrarMenuAcceso(e, acceso) {
 }
 
 window.mostrarMenuAcceso = mostrarMenuAcceso;
+
+async function nuevaCategoria() {
   openModal(
     'Nueva Categoría ATS',
     'Nombre de la categoría',
