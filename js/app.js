@@ -179,18 +179,9 @@ async function cargarCategoriasSidebar() {
         navigate(`ats/${encodeURIComponent(cat.nombre)}`);
       });
 
-      const spanDel = document.createElement('span');
-      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
-      spanDel.title = 'Eliminar categoría';
-      spanDel.textContent = '✕';
-      spanDel.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        eliminarCategoria(cat.id, cat.nombre);
-      });
-
       div.appendChild(spanNombre);
-      div.appendChild(spanDel);
+      // Clic derecho → menú contextual
+      div.addEventListener('contextmenu', (e) => mostrarMenuContextual(e, cat, 'ats'));
       container.appendChild(div);
     });
   } catch(e) {
@@ -198,7 +189,132 @@ async function cargarCategoriasSidebar() {
   }
 }
 
-async function nuevaCategoria() {
+/* ================================================================
+   MENÚ CONTEXTUAL — Clic derecho en categorías del sidebar
+   ================================================================ */
+let _menuContextual = null;
+
+function cerrarMenuContextual() {
+  if (_menuContextual) {
+    _menuContextual.remove();
+    _menuContextual = null;
+  }
+}
+
+function mostrarMenuContextual(e, cat, tipo) {
+  e.preventDefault();
+  e.stopPropagation();
+  cerrarMenuContextual();
+
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.style.cssText = `
+    position:fixed;top:${e.clientY}px;left:${e.clientX}px;
+    background:var(--card);border:1px solid var(--border);border-radius:8px;
+    padding:6px 0;z-index:9999;min-width:160px;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);`;
+
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="renombrarCategoria(${cat.id},'${escapeHtml(cat.nombre).replace(/'/g,"\\'")}','${tipo}')"
+         style="padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)">
+      ✏️ Renombrar
+    </div>
+    <div class="ctx-item" onclick="confirmarEliminarCategoria(${cat.id},'${escapeHtml(cat.nombre).replace(/'/g,"\\'")}','${tipo}')"
+         style="padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:#f87171">
+      🗑️ Eliminar
+    </div>`;
+
+  // Hover effect
+  menu.querySelectorAll('.ctx-item').forEach(item => {
+    item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,.06)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+  });
+
+  document.body.appendChild(menu);
+  _menuContextual = menu;
+
+  // Ajustar si se sale de la pantalla
+  const rect = menu.getBoundingClientRect();
+  if (rect.right > window.innerWidth)  menu.style.left = `${e.clientX - rect.width}px`;
+  if (rect.bottom > window.innerHeight) menu.style.top = `${e.clientY - rect.height}px`;
+
+  // Cerrar al hacer clic fuera
+  setTimeout(() => document.addEventListener('click', cerrarMenuContextual, { once: true }), 10);
+}
+
+async function renombrarCategoria(id, nombreActual, tipo) {
+  cerrarMenuContextual();
+  openModal(
+    'Renombrar Categoría',
+    'Nuevo nombre',
+    nombreActual,
+    async (nuevoNombre) => {
+      if (nuevoNombre === nombreActual) return;
+      try {
+        await Storage.Categorias.save({ id, nombre: nuevoNombre, tipo });
+        if (tipo === 'ats')       await cargarCategoriasSidebar();
+        if (tipo === 'parada')    await cargarCategoriasParada();
+        if (tipo === 'checklist') await cargarCategoriasChecklistSidebar();
+        toast('✓ Categoría renombrada');
+      } catch(e) {
+        const { texto } = Storage.mensajeError(e);
+        toast(`Error al renombrar: ${texto}`, 'error');
+      }
+    }
+  );
+  // Pre-llenar el modal con el nombre actual
+  setTimeout(() => {
+    const inp = document.getElementById('modal-input');
+    if (inp) { inp.value = nombreActual; inp.select(); }
+  }, 130);
+}
+
+async function confirmarEliminarCategoria(id, nombre, tipo) {
+  cerrarMenuContextual();
+  if (tipo === 'ats')       eliminarCategoria(id, nombre);
+  if (tipo === 'parada')    eliminarCategoriaParada(id, nombre);
+  if (tipo === 'checklist') eliminarCategoriaChecklist(id, nombre);
+}
+
+function mostrarMenuAcceso(e, acceso) {
+  e.preventDefault();
+  e.stopPropagation();
+  cerrarMenuContextual();
+
+  const menu = document.createElement('div');
+  menu.id = 'ctx-menu';
+  menu.style.cssText = `
+    position:fixed;top:${e.clientY}px;left:${e.clientX}px;
+    background:var(--card);border:1px solid var(--border);border-radius:8px;
+    padding:6px 0;z-index:9999;min-width:200px;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);`;
+
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="navigate('${acceso.hash}');cerrarMenuContextual()"
+         style="padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)">
+      🔗 Abrir
+    </div>
+    <div class="ctx-item" onclick="window.open(location.origin+location.pathname+'#${acceso.hash}','_blank','noopener');cerrarMenuContextual()"
+         style="padding:9px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;color:var(--text)">
+      🔗 Abrir en nueva pestaña
+    </div>`;
+
+  menu.querySelectorAll('.ctx-item').forEach(item => {
+    item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,.06)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+  });
+
+  document.body.appendChild(menu);
+  _menuContextual = menu;
+
+  const rect = menu.getBoundingClientRect();
+  if (rect.right > window.innerWidth)   menu.style.left = `${e.clientX - rect.width}px`;
+  if (rect.bottom > window.innerHeight) menu.style.top  = `${e.clientY - rect.height}px`;
+
+  setTimeout(() => document.addEventListener('click', cerrarMenuContextual, { once: true }), 10);
+}
+
+window.mostrarMenuAcceso = mostrarMenuAcceso;
   openModal(
     'Nueva Categoría ATS',
     'Nombre de la categoría',
@@ -398,6 +514,7 @@ function renderAccesosRapidos() {
         style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;opacity:.5;line-height:1"
         title="Quitar del dashboard">✕</button>`;
     card.addEventListener('click', () => navigate(a.hash));
+    card.addEventListener('contextmenu', (e) => mostrarMenuAcceso(e, a));
     container.appendChild(card);
   });
 }
@@ -552,19 +669,8 @@ async function cargarCategoriasChecklistSidebar() {
         navigate(`checklists/${encodeURIComponent(cat.nombre)}`);
       });
 
-      const spanDel = document.createElement('span');
-      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
-      spanDel.title = 'Eliminar categoría';
-      spanDel.textContent = '✕';
-      spanDel.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (typeof eliminarCategoriaChecklist === 'function')
-          eliminarCategoriaChecklist(cat.id, cat.nombre);
-      });
-
       div.appendChild(spanNombre);
-      div.appendChild(spanDel);
+      div.addEventListener('contextmenu', (e) => mostrarMenuContextual(e, cat, 'checklist'));
       container.appendChild(div);
     });
   } catch(e) {
@@ -610,18 +716,8 @@ async function cargarCategoriasParada() {
         navigate(`parada/${encodeURIComponent(cat.nombre)}`);
       });
 
-      const spanDel = document.createElement('span');
-      spanDel.style.cssText = 'font-size:11px;opacity:.5;cursor:pointer;padding:0 6px';
-      spanDel.title = 'Eliminar categoría';
-      spanDel.textContent = '✕';
-      spanDel.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        eliminarCategoriaParada(cat.id, cat.nombre);
-      });
-
       div.appendChild(spanNombre);
-      div.appendChild(spanDel);
+      div.addEventListener('contextmenu', (e) => mostrarMenuContextual(e, cat, 'parada'));
       container.appendChild(div);
     });
   } catch(e) {

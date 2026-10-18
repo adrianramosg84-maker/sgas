@@ -86,10 +86,24 @@ async function renderAtsLista(categoria, tipo = 'ats') {
   showView('ats_lista');
 }
 
+/* ── Generar iniciales a partir del nombre de categoría ── */
+function generarIniciales(categoria) {
+  if (!categoria) return 'GEN';
+  const palabras = categoria.trim().split(/\s+/).filter(p => p.length > 0);
+  if (palabras.length === 1) {
+    return palabras[0].substring(0, 3).toUpperCase();
+  }
+  // 2+ palabras: 1ra letra de la 1ra + 3 primeras de la 2da
+  return (palabras[0][0] + palabras[1].substring(0, 3)).toUpperCase();
+}
+
 /* ================================================================
    FICHA — CREAR / ABRIR
    ================================================================ */
 async function crearNuevaFicha(nombre) {
+  const iniciales = generarIniciales(AtsState.categoria);
+  const codigoAuto = `000-${iniciales}-APTIM-SS.GG`;
+
   AtsState.fichaActual = {
     nombre,
     categoria:   AtsState.categoria,
@@ -102,7 +116,7 @@ async function crearNuevaFicha(nombre) {
     ],
     observaciones: '',
     emergencia:  {},
-    codigo:      '',
+    codigo:      codigoAuto,
     ot_tags:     [],
   };
   AtsState.modo = 'edit';
