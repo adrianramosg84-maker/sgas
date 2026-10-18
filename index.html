@@ -80,7 +80,7 @@
 
     <hr class="sep">
 
-    <a href="#emergencias" class="nav-item" data-nav="emergencias"
+    <a href="#emergencias" class="nav-item" data-nav="emergencias" id="sidebar-emergencias"
        onclick="event.preventDefault();navigate('emergencias')">
       <span class="icon">🚨</span>
       <span class="nav-label">Puntos de Emergencia</span>
@@ -92,26 +92,26 @@
       <span class="nav-label">ATS Semanales</span>
     </a>
 
-    <a href="#rescatista" class="nav-item" data-nav="rescatista"
+    <a href="#rescatista" class="nav-item" data-nav="rescatista" id="sidebar-rescatista"
        onclick="event.preventDefault();navigate('rescatista')">
       <span class="icon">🦺</span>
       <span class="nav-label">Rescatista</span>
     </a>
 
-    <a href="#actividades-criticas" class="nav-item" data-nav="actividades-criticas"
+    <a href="#actividades-criticas" class="nav-item" data-nav="actividades-criticas" id="sidebar-actividades"
        onclick="event.preventDefault();navigate('actividades-criticas')">
       <span class="icon">⚠️</span>
       <span class="nav-label">Actividades Críticas</span>
     </a>
 
-    <a href="#planos" class="nav-item" data-nav="planos"
+    <a href="#planos" class="nav-item" data-nav="planos" id="sidebar-planos"
        onclick="event.preventDefault();navigate('planos')">
       <span class="icon">📁</span>
       <span class="nav-label">Planos y Documentos</span>
     </a>
 
     <!-- Checklists (con submenú dinámico de categorías) -->
-    <div class="nav-item" data-toggle="subChecklists"
+    <div class="nav-item" data-toggle="subChecklists" id="sidebar-checklists"
          onclick="toggleSub('subChecklists', this)">
       <span class="icon">✅</span>
       <span class="nav-label">Checklists</span>
@@ -127,7 +127,7 @@
       </div>
     </div>
 
-    <a href="#equipos" class="nav-item" data-nav="equipos"
+    <a href="#equipos" class="nav-item" data-nav="equipos" id="sidebar-equipos"
        onclick="event.preventDefault();navigate('equipos')">
       <span class="icon">🔧</span>
       <span class="nav-label">Equipos / TAG</span>
@@ -157,11 +157,34 @@
       <div class="view active" id="view-inicio">
         <div class="view-header">
           <div class="view-title">Panel de Control</div>
+          <button class="btn btn-ghost btn-sm" onclick="abrirPersonalizarDashboard()" title="Personalizar accesos rápidos">⚙️ Personalizar</button>
         </div>
-        <div class="stat-grid" id="dash-stats">
-          <div class="stat-card"><div class="stat-num" id="stat-ats">—</div><div class="stat-label">Fichas ATS</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-areas">—</div><div class="stat-label">Áreas de Emergencia</div></div>
-          <div class="stat-card"><div class="stat-num" id="stat-docs">—</div><div class="stat-label">Documentos</div></div>
+
+        <!-- Accesos rápidos -->
+        <div id="dash-accesos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>
+
+        <!-- Stats medianas -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+          <div class="stat-card" style="padding:16px">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)" id="stat-ats">—</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Fichas ATS</div>
+          </div>
+          <div class="stat-card" style="padding:16px">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)" id="stat-parada">—</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Parada de Planta</div>
+          </div>
+          <div class="stat-card" style="padding:16px">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)" id="stat-semanales">—</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">ATS Semanales</div>
+          </div>
+        </div>
+
+        <!-- Historial últimas 5 fichas -->
+        <div class="stat-card" style="padding:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">
+            🕐 Últimas fichas abiertas
+          </div>
+          <div id="dash-historial"></div>
         </div>
       </div>
 

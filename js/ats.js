@@ -115,6 +115,8 @@ async function abrirFichaSaved(id) {
     if (!ficha) return;
     AtsState.fichaActual = ficha;
     AtsState.modo = 'saved';
+    // Registrar en historial del dashboard
+    if (typeof agregarAlHistorial === 'function') agregarAlHistorial(ficha);
     renderFicha();
   } catch(e) {
     const { texto } = Storage.mensajeError(e);
