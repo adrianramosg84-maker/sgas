@@ -449,9 +449,16 @@ const HIST_STORAGE_KEY = 'sgas_historial';    // últimas 5 fichas abiertas
 function getAccesosActivos() {
   try {
     const saved = localStorage.getItem(DASH_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Si está vacío o corrupto, resetear a todos activos
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
   } catch(_) {}
-  return ACCESOS_RAPIDOS.map(a => a.id); // por defecto todos activos
+  // Por defecto todos activos
+  const todos = ACCESOS_RAPIDOS.map(a => a.id);
+  setAccesosActivos(todos);
+  return todos;
 }
 
 function setAccesosActivos(ids) {
