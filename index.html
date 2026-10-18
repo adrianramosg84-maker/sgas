@@ -236,47 +236,17 @@
         <div class="ficha-block">
           <h2>Datos de la ficha</h2>
           <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start">
-
-            <!-- Columna izquierda: código (fijo, angosto) -->
+            <!-- Código (fijo, angosto) -->
             <div class="field-group">
               <label for="f-codigo">Código (opcional)</label>
               <input id="f-codigo" type="text" placeholder="Ej: 001-AT-APTIM-SS.GG" />
             </div>
-
-            <!-- Columna derecha: nombre (ocupa todo el espacio restante) -->
+            <!-- Nombre (ocupa todo el espacio restante) -->
             <div class="field-group">
               <label for="f-nombre">Nombre del ATS</label>
               <input id="f-nombre" type="text"
                      placeholder="Ej: Aplicación de pintura epóxica en tanques T-14" />
             </div>
-
-          </div>
-        </div>
-
-              <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                  <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">
-                    OT / TAG del Equipo
-                  </label>
-                  <button class="btn btn-ghost btn-sm" id="btn-add-ottag" onclick="agregarFilaOtTag()"
-                          style="display:none">＋ Agregar</button>
-                </div>
-                <table style="width:100%;border-collapse:collapse;font-size:13px" id="tabla-ottag">
-                  <thead id="thead-ottag" style="display:none">
-                    <tr>
-                      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border);width:50%">OT (10 dígitos)</th>
-                      <th style="background:var(--card);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);border:1px solid var(--border)">TAG Equipo</th>
-                      <th style="background:var(--card);width:32px;border:1px solid var(--border)"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-ottag"></tbody>
-                </table>
-                <div id="ottag-vacio" style="font-size:12px;color:var(--text-dim);padding:4px 0;display:none">
-                  Sin OT/TAG cargados.
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
