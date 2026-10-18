@@ -424,11 +424,6 @@ function eliminarFilaOtTag(index) {
   ficha.ot_tags.splice(index, 1);
   renderTablaOtTag(ficha.ot_tags, true);
 }
-  if (!ficha) return;
-  ficha.ot_tags = leerOtTagsDOM();
-  ficha.ot_tags.splice(index, 1);
-  renderTablaOtTag(ficha.ot_tags, true);
-}
 
 function leerOtTagsDOM() {
   const filas = [];
