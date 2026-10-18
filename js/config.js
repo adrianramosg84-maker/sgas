@@ -34,6 +34,7 @@ const CONFIG_DEFAULTS = {
   colorTextDim:   '#9aa3b8',
   colorCard:      '#243050',
   colorBorder:    '#2e3a55',
+  colorTableCell: '#f0f2f5',
   font:           'Segoe UI',
   fontSize:       '14',
   dashBgOverlay:  '40',
@@ -66,17 +67,18 @@ const GOOGLE_FONTS = {
 };
 
 const COLOR_FIELDS = [
-  { key: 'colorBg',      label: 'Fondo general',    group: 'Base' },
-  { key: 'colorSidebar', label: 'Sidebar',           group: 'Base' },
-  { key: 'colorHeader',  label: 'Header',            group: 'Base' },
-  { key: 'colorCard',    label: 'Tarjetas',          group: 'Base' },
-  { key: 'colorBorder',  label: 'Bordes',            group: 'Base' },
-  { key: 'colorAccent',  label: 'Acento / Activo',   group: 'Acento' },
-  { key: 'colorText',    label: 'Texto principal',   group: 'Texto' },
-  { key: 'colorTextDim', label: 'Texto secundario',  group: 'Texto' },
-  { key: 'colorSave',    label: 'Botón Guardar',     group: 'Botones' },
-  { key: 'colorDel',     label: 'Botón Eliminar',    group: 'Botones' },
-  { key: 'colorEdit',    label: 'Botón Editar',      group: 'Botones' },
+  { key: 'colorBg',        label: 'Fondo general',    group: 'Base' },
+  { key: 'colorSidebar',   label: 'Sidebar',           group: 'Base' },
+  { key: 'colorHeader',    label: 'Header',            group: 'Base' },
+  { key: 'colorCard',      label: 'Tarjetas',          group: 'Base' },
+  { key: 'colorBorder',    label: 'Bordes',            group: 'Base' },
+  { key: 'colorTableCell', label: 'Celdas de tabla',   group: 'Base' },
+  { key: 'colorAccent',    label: 'Acento / Activo',   group: 'Acento' },
+  { key: 'colorText',      label: 'Texto principal',   group: 'Texto' },
+  { key: 'colorTextDim',   label: 'Texto secundario',  group: 'Texto' },
+  { key: 'colorSave',      label: 'Botón Guardar',     group: 'Botones' },
+  { key: 'colorDel',       label: 'Botón Eliminar',    group: 'Botones' },
+  { key: 'colorEdit',      label: 'Botón Editar',      group: 'Botones' },
 ];
 
 let currentConfig = { ...CONFIG_DEFAULTS };
@@ -120,8 +122,9 @@ function applyConfig(cfg) {
   root.style.setProperty('--btn-edit', cfg.colorEdit);
   root.style.setProperty('--text',     cfg.colorText     || CONFIG_DEFAULTS.colorText);
   root.style.setProperty('--text-dim', cfg.colorTextDim  || CONFIG_DEFAULTS.colorTextDim);
-  root.style.setProperty('--card',     cfg.colorCard     || CONFIG_DEFAULTS.colorCard);
-  root.style.setProperty('--border',   cfg.colorBorder   || CONFIG_DEFAULTS.colorBorder);
+  root.style.setProperty('--card',        cfg.colorCard      || CONFIG_DEFAULTS.colorCard);
+  root.style.setProperty('--border',      cfg.colorBorder    || CONFIG_DEFAULTS.colorBorder);
+  root.style.setProperty('--table-cell',  cfg.colorTableCell || CONFIG_DEFAULTS.colorTableCell);
   root.style.setProperty('--font',     FONT_MAP[cfg.font] || FONT_MAP['Segoe UI']);
   const legacyMap = { 'pequeño': '12', 'normal': '14', 'grande': '16' };
   const px = legacyMap[cfg.fontSize] || legacyMap[cfg.size] || cfg.fontSize || '14';
