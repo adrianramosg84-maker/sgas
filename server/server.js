@@ -15,7 +15,8 @@ const PORT = process.env.PORT || 3000;
 
 // CORS: solo permite requests desde el frontend en GitHub Pages
 const allowedOrigins = [
-  'https://adrianramosg84-maker.github.io',
+  'https://sgas-ssgg.github.io',
+  'https://adrianramosg84-maker.github.io', // legacy — mantener por compatibilidad
   'http://localhost',
   'http://127.0.0.1',
 ];
